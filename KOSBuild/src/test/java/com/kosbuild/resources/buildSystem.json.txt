@@ -1,0 +1,14 @@
+﻿{
+    parent:"buildSystemParent",
+    properties: {
+        compilerVersion:"6.4.2",
+        myProperty:34
+    },
+    build: {
+        "compiler":{
+            configure: {
+                +libraries: ["libGui"]
+            }
+        }
+    }
+}

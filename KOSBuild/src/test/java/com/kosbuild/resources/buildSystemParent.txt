@@ -1,0 +1,37 @@
+﻿{
+	name: "myApplication",
+	
+	properties: {
+		compilerVersion:"5.4.2"
+	},
+
+	dependencies:[
+		{
+			name:"newlib:1.0:${CURRENT_ARCHITECTURE}",
+			compiler:"gcc:5.4.2"
+		}
+	],
+
+	buid: {
+		"compiler":{
+			applyPlugin: "gcc:5.4.2",
+			configure: {
+				id: "gccCompilerConfig"
+				resultPackageType: "app",
+				libraries: ["libgcc"],
+			}
+		}
+	},
+
+	events: {
+		"before: gcc-compile-unit": {
+			"groovyCopyStep":{
+				plugin: "groovy:0.1",
+				config: {
+					text:"A
+AA"
+				}
+			}
+		}
+	}
+}
