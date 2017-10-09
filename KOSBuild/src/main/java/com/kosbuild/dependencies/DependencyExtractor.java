@@ -1,6 +1,7 @@
 package com.kosbuild.dependencies;
 
 import com.kosbuild.LifeCycleExecutor;
+import com.kosbuild.Utils;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.config.Config;
 import com.kosbuild.config.Repository;
@@ -124,15 +125,9 @@ public class DependencyExtractor {
                 Dependency dependency = new Dependency();
                 String compiler = dep.getElementByName("compiler").getAsString();
                 String nameAndVersion = dep.getElementByName("name").getAsString();
-                boolean transitive = false;
-                if (dep.contains("transitive")) {
-                    transitive = dep.getElementByName("transitive").getAsBoolean();
-                }
+                boolean transitive = Utils.getBooleanProperty("transitive", dep, Boolean.FALSE);
                 
-                boolean includeWithoutPrefix=false;
-                if (dep.contains("includeWithoutPrefix")) {
-                    includeWithoutPrefix = dep.getElementByName("includeWithoutPrefix").getAsBoolean();
-                }
+                boolean includeWithoutPrefix=Utils.getBooleanProperty("includeWithoutPrefix", dep, Boolean.FALSE);
 
                 if (!nameAndVersion.contains(":")) {
                     throw new IllegalArgumentException("Dependency name [" + nameAndVersion + "] is in wrong format. Proper format \"NAME:VERSION\"");

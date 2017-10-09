@@ -10,11 +10,21 @@ import java.util.List;
  * @author Dmitry
  */
 public class BuildContext {
-    private String applicationName="resultApp";
+
+    private String applicationName = "resultApp";
+    private String version;
     private File buildFile;
     private File projectFolder;
     private List<Dependency> dependencies = new ArrayList<>();
     private List<PluginConfig> plugins = new ArrayList<>();
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public String getVersion() {
+        return version;
+    }
 
     public void setApplicationName(String applicationName) {
         this.applicationName = applicationName;
@@ -24,8 +34,6 @@ public class BuildContext {
         return applicationName;
     }
 
-    
-    
     public File getBuildFile() {
         return buildFile;
     }

@@ -69,11 +69,12 @@ public class PluginMain extends AbstractPlugin {
         List<String> sharedArguments = createSharedCompilerArgumentsList(buildContext, pluginConfig);
         List<String> includePaths = new ArrayList<>();
         List<String> librariesPaths = new ArrayList<>();
-        collectIncludeAndLibraryPaths(includePaths, librariesPaths, buildContext);
+        List<String> librariesNames = new ArrayList<>();
+        collectIncludeAndLibraryPaths(includePaths, librariesPaths, librariesNames, buildContext);
         addIncludePaths(sharedArguments, includePaths);
 
-        boolean stopOnFirstError = getBooleanProperty("stopOnFirstErrorFile", pluginConfig.getConfig(), Boolean.TRUE);
-        String[] sourceFilesExtensions = getStringArrayProperty("sourceFileExtensions", pluginConfig.getConfig(), new String[]{"cpp", "c"});
+        boolean stopOnFirstError = Utils.getBooleanProperty("stopOnFirstErrorFile", pluginConfig.getConfig(), Boolean.TRUE);
+        String[] sourceFilesExtensions = Utils.getStringArrayProperty("sourceFileExtensions", pluginConfig.getConfig(), new String[]{"cpp", "c"});
         List<File> sourceFiles = listSourceFiles(buildContext, sourceFilesExtensions);
         boolean compilationError = false;
         File targetFolder = getTargetFolder(buildContext.getProjectFolder());
@@ -118,14 +119,14 @@ public class PluginMain extends AbstractPlugin {
             return false;
         }
 
-        if (!linking(pluginConfig, buildContext, librariesPaths)) {
+        if (!linking(pluginConfig, buildContext, librariesPaths, librariesNames)) {
             return false;
         }
 
-        if(!objCopyStage(pluginConfig, buildContext)){
+        if (!objCopyStage(pluginConfig, buildContext)) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -135,7 +136,7 @@ public class PluginMain extends AbstractPlugin {
         args.add(buildContext.getApplicationName());
         args.add("-O");
         args.add("binary");
-        
+
         ProcessBuilder processBuilder = new ProcessBuilder(args);
         processBuilder.inheritIO();
         processBuilder.directory(getTargetFolder(buildContext.getProjectFolder()));
@@ -154,7 +155,7 @@ public class PluginMain extends AbstractPlugin {
         return true;
     }
 
-    private boolean linking(PluginConfig pluginConfig, BuildContext buildContext, List<String> librariesPaths) throws IOException {
+    private boolean linking(PluginConfig pluginConfig, BuildContext buildContext, List<String> librariesPaths, List<String> librariesNames) throws IOException {
         boolean generateMapFile = false;
         if (pluginConfig.getConfig().contains("generateMapFile")) {
             generateMapFile = pluginConfig.getConfig().getElementByName("generateMapFile").getAsBoolean();
@@ -187,9 +188,17 @@ public class PluginMain extends AbstractPlugin {
 
         args.add("*.o");
 
-        //search libraries from dependencies
-        args.add("-lgcc");
-        args.add("-lc.dll");
+        for (int j = 0; j < 2; j++) {
+            for (int i = 0; i < librariesNames.size(); i++) {
+                String library = librariesNames.get(i);
+                String libraryFileName = FilenameUtils.getBaseName(library);
+                if (libraryFileName.startsWith("lib")) {
+                    libraryFileName = libraryFileName.substring(3);
+                }
+                args.add("-l" + libraryFileName);
+            }
+        }
+
         ProcessBuilder processBuilder = new ProcessBuilder(args);
         processBuilder.inheritIO();
         processBuilder.directory(getTargetFolder(buildContext.getProjectFolder()));
@@ -254,10 +263,10 @@ public class PluginMain extends AbstractPlugin {
         args.add("-c");
 
         JsonObject conf = pluginConfig.getConfig();
-        String optimizationLevel = calculateOptimizationLevel(getStringProperty("optimizationLevel", conf, "release"));
+        String optimizationLevel = calculateOptimizationLevel(Utils.getStringProperty("optimizationLevel", conf, "release"));
         args.add(optimizationLevel);
 
-        String compilerSupport = parseCompilerSupport(getStringProperty("compilerSupport", conf, "c++14"));
+        String compilerSupport = parseCompilerSupport(Utils.getStringProperty("compilerSupport", conf, "c++14"));
         args.add(compilerSupport);
 
         File headersFolder = getHeadersFolder(buildContext.getProjectFolder());
@@ -269,7 +278,7 @@ public class PluginMain extends AbstractPlugin {
         return args;
     }
 
-    private void collectIncludeAndLibraryPaths(List<String> includePaths, List<String> libraryPaths, BuildContext buildContext) {
+    private void collectIncludeAndLibraryPaths(List<String> includePaths, List<String> libraryPaths, List<String> librariesNames, BuildContext buildContext) {
         DependencyExtractor dependencyExtractor = new DependencyExtractor();
         for (Dependency dependency : buildContext.getDependencies()) {
             File dependencyFolder = dependencyExtractor.getPathToPackageDependencyAndLoadIfNotExists(dependency);
@@ -278,7 +287,18 @@ public class PluginMain extends AbstractPlugin {
                 includePath = new File(includePath, dependency.getName()).getAbsolutePath();
             }
             includePaths.add(includePath);
-            libraryPaths.add(new File(dependencyFolder.getAbsoluteFile(), "libs").getAbsolutePath());
+            File libsFolder = new File(dependencyFolder.getAbsoluteFile(), "libs");
+            libraryPaths.add(libsFolder.getAbsolutePath());
+            for (File file : libsFolder.listFiles()) {
+                String fileName = file.getName();
+                if (fileName.toLowerCase().endsWith(".a")) {
+                    if (!fileName.startsWith("lib")) {
+                        System.out.println("Library [" + fileName + "] in dependency [" + dependency + "] should start with 'lib'. Skip");
+                        continue;
+                    }
+                    librariesNames.add(file.getName());
+                }
+            }
         }
     }
 

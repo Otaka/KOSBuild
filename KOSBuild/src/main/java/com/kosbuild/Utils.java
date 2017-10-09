@@ -1,5 +1,8 @@
 package com.kosbuild;
 
+import com.kosbuild.jsonparser.JsonArray;
+import com.kosbuild.jsonparser.JsonElement;
+import com.kosbuild.jsonparser.JsonObject;
 import java.io.File;
 import java.net.URISyntaxException;
 
@@ -32,5 +35,40 @@ public class Utils {
             return OperationSystem.OsX;
         }
         throw new IllegalArgumentException("Operation system [" + osString + "] is not supported");
+    }
+
+    public static String getStringProperty(String key, JsonObject config, String defaultValue) {
+        if (config.contains(key)) {
+            return config.getElementByName(key).getAsString();
+        }
+        return defaultValue;
+    }
+
+    public static Boolean getBooleanProperty(String key, JsonObject config, Boolean defaultValue) {
+        if (!config.contains(key)) {
+            return defaultValue;
+        }
+
+        return config.getElementByName(key).getAsBoolean();
+
+    }
+
+    public static String[] getStringArrayProperty(String key, JsonObject config, String[] defaultValue) {
+        if (!config.contains(key)) {
+            return defaultValue;
+        }
+
+        JsonElement e = config.getElementByName(key);
+        if (!e.isArray()) {
+            throw new IllegalArgumentException("[" + key + "] expected to be array of strings, but it is [" + e.getClass().getSimpleName() + "]");
+        }
+
+        JsonArray array = e.getAsArray();
+        String[] values = new String[array.size()];
+        for (int i = 0; i < values.length; i++) {
+            values[i] = array.get(i).getAsString();
+        }
+
+        return values;
     }
 }

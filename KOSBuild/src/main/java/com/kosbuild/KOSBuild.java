@@ -51,6 +51,17 @@ public class KOSBuild {
         if (parsedFile.contains("properties")) {
             replacePlaceholders(parsedFile, parseProperties(parsedFile.getElementByName("properties").getAsObject()));
         }
+        String projectName = Utils.getStringProperty("name", parsedFile, null);
+        if (projectName == null) {
+            throw new IllegalArgumentException("Mandatory [name] property is not found in [" + buildFile.getAbsolutePath() + "] build file");
+        }
+
+        String version = Utils.getStringProperty("version", parsedFile, null);
+        if (version == null) {
+            throw new IllegalArgumentException("Mandatory [version] property is not found in [" + buildFile.getAbsolutePath() + "] build file");
+        }
+        buildContext.setApplicationName(projectName);
+        buildContext.setVersion(version);
 
         DependencyExtractor dependencyManager = new DependencyExtractor();
         dependencyManager.collectDependencies(parsedFile, buildContext);

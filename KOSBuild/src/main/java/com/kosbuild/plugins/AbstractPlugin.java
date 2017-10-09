@@ -34,38 +34,5 @@ public abstract class AbstractPlugin {
 
     public abstract String[] getStages();
 
-    protected String getStringProperty(String key, JsonObject config, String defaultValue) {
-        if (config.contains(key)) {
-            return config.getElementByName(key).getAsString();
-        }
-        return defaultValue;
-    }
-
-    protected Boolean getBooleanProperty(String key, JsonObject config, Boolean defaultValue) {
-        if (!config.contains(key)) {
-            return defaultValue;
-        }
-
-        return config.getElementByName(key).getAsBoolean();
-
-    }
-
-    protected String[] getStringArrayProperty(String key, JsonObject config, String[] defaultValue) {
-        if (!config.contains(key)) {
-            return defaultValue;
-        }
-
-        JsonElement e = config.getElementByName(key);
-        if (!e.isArray()) {
-            throw new IllegalArgumentException("[" + key + "] expected to be array of strings, but it is [" + e.getClass().getSimpleName() + "]");
-        }
-
-        JsonArray array = e.getAsArray();
-        String[] values = new String[array.size()];
-        for (int i = 0; i < values.length; i++) {
-            values[i] = array.get(i).getAsString();
-        }
-
-        return values;
-    }
+    
 }
