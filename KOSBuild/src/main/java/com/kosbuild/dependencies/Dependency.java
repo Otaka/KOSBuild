@@ -12,6 +12,17 @@ public class Dependency {
     private String compiler;
     private boolean transitive;
     private boolean includeWithoutPrefix;
+    private String ownerProject;
+
+    public void setOwnerProject(String ownerProject) {
+        this.ownerProject = ownerProject;
+    }
+
+    public String getOwnerProject() {
+        return ownerProject;
+    }
+    
+    
 
     public String formatPath() {
         if (compiler == null) {

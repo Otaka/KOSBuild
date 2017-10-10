@@ -4,7 +4,9 @@ import com.kosbuild.dependencies.Dependency;
 import com.kosbuild.plugins.PluginConfig;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Dmitry
@@ -15,7 +17,7 @@ public class BuildContext {
     private String version;
     private File buildFile;
     private File projectFolder;
-    private List<Dependency> dependencies = new ArrayList<>();
+    private Set<Dependency> dependencies = new HashSet<>();
     private List<PluginConfig> plugins = new ArrayList<>();
 
     public void setVersion(String version) {
@@ -54,7 +56,7 @@ public class BuildContext {
         return plugins;
     }
 
-    public List<Dependency> getDependencies() {
+    public Set<Dependency> getDependencies() {
         return dependencies;
     }
 

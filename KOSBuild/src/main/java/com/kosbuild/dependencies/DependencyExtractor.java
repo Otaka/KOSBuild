@@ -4,11 +4,14 @@ import com.kosbuild.LifeCycleExecutor;
 import com.kosbuild.Utils;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.config.Config;
+import com.kosbuild.config.CrossModuleProperties;
 import com.kosbuild.config.Repository;
 import com.kosbuild.jsonparser.FieldValuePair;
 import com.kosbuild.jsonparser.JsonArray;
 import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.jsonparser.JsonObject;
+import com.kosbuild.jsonparser.JsonParseException;
+import com.kosbuild.jsonparser.JsonParser;
 import com.kosbuild.plugins.AbstractPlugin;
 import com.kosbuild.plugins.PluginConfig;
 import com.kosbuild.plugins.PluginManager;
@@ -18,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -26,9 +30,13 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BOMInputStream;
 
 /**
  * @author Dmitry
@@ -113,45 +121,128 @@ public class DependencyExtractor {
         throw new IllegalArgumentException("[runOnStep] property contains wrong step [" + stepString + "]");
     }
 
-    public void collectDependencies(JsonObject jsonObject, BuildContext buildContext) {
+    public void collectDependencies(JsonObject jsonObject, BuildContext buildContext, CrossModuleProperties crossModuleProperties) {
         if (jsonObject.contains("dependencies")) {
             if (!jsonObject.getElementByName("dependencies").isArray()) {
                 throw new IllegalArgumentException("[dependencies] section should be array of objects, but found [" + jsonObject.getElementByName("dependencies").getClass().getName() + "]");
             }
 
             JsonArray dependencies = jsonObject.getElementByName("dependencies").getAsArray();
+            Set<Dependency> dependenciesForTransientSearch = new HashSet<Dependency>();
             for (JsonElement element : dependencies.getElements()) {
-                JsonObject dep = element.getAsObject();
-                Dependency dependency = new Dependency();
-                String compiler = dep.getElementByName("compiler").getAsString();
-                String nameAndVersion = dep.getElementByName("name").getAsString();
-                boolean transitive = Utils.getBooleanProperty("transitive", dep, Boolean.FALSE);
-                
-                boolean includeWithoutPrefix=Utils.getBooleanProperty("includeWithoutPrefix", dep, Boolean.FALSE);
-
-                if (!nameAndVersion.contains(":")) {
-                    throw new IllegalArgumentException("Dependency name [" + nameAndVersion + "] is in wrong format. Proper format \"NAME:VERSION\"");
+                Dependency dependency = convertJsonObjectToDependencyObject(element.getAsObject(), buildContext, crossModuleProperties);
+                if (dependency.isTransitive()) {
+                    dependenciesForTransientSearch.add(dependency);
                 }
 
-                String name = nameAndVersion.substring(0, nameAndVersion.indexOf(':'));
-                String version = nameAndVersion.substring(nameAndVersion.indexOf(':') + 1);
-                dependency.setCompiler(compiler);
-                dependency.setName(name);
-                dependency.setVersion(version);
-                dependency.setTransitive(transitive);
-                dependency.setIncludeWithoutPrefix(includeWithoutPrefix);
                 buildContext.addDependency(dependency);
+            }
+
+            for (Dependency dependency : buildContext.getDependencies()) {
+                downloadIfNotExists(dependency, "packages");
+            }
+
+            processTransitiveDependencies(buildContext, crossModuleProperties, dependenciesForTransientSearch);
+        }
+    }
+
+    private Dependency convertJsonObjectToDependencyObject(JsonObject jsonObject, BuildContext buildContext, CrossModuleProperties crossModuleProperties) {
+        Dependency dependency = new Dependency();
+        dependency.setOwnerProject(buildContext.getApplicationName() + ":" + buildContext.getVersion());
+        String compiler = jsonObject.getElementByName("compiler").getAsString();
+        String nameAndVersion = jsonObject.getElementByName("name").getAsString();
+        boolean transitive = Utils.getBooleanProperty("transitive", jsonObject, Boolean.FALSE);
+
+        boolean includeWithoutPrefix = Utils.getBooleanProperty("includeWithoutPrefix", jsonObject, Boolean.FALSE);
+
+        if (!nameAndVersion.contains(":")) {
+            throw new IllegalArgumentException("Dependency name [" + nameAndVersion + "] is in wrong format. Proper format \"NAME:VERSION\"");
+        }
+
+        String name = nameAndVersion.substring(0, nameAndVersion.indexOf(':'));
+        String version = nameAndVersion.substring(nameAndVersion.indexOf(':') + 1);
+        dependency.setCompiler(compiler);
+        dependency.setName(name);
+        dependency.setVersion(version);
+        if (transitive) {
+            dependency.setTransitive(true);
+            if (isDependencyIsSuppresedForTransientChildDependencies(crossModuleProperties, dependency)) {
+                dependency.setTransitive(false);
+            }
+        } else {
+            dependency.setTransitive(false);
+        }
+
+        dependency.setIncludeWithoutPrefix(includeWithoutPrefix);
+        return dependency;
+    }
+
+    private void processTransitiveDependencies(BuildContext buildContext, CrossModuleProperties crossModuleProperties, Set<Dependency> dependenciesForTransientSearch) {
+        while (!dependenciesForTransientSearch.isEmpty()) {
+            Iterator<Dependency> iterator = dependenciesForTransientSearch.iterator();
+            Dependency dependency = iterator.next();
+            iterator.remove();
+            if (!dependency.isTransitive()) {
+                continue;
+            }
+
+            JsonArray transitiveDependenciesJsonForDependency = getTransitiveDependenciesJsonFromDependency(dependency);
+            for (JsonElement transitiveDependencyJson : transitiveDependenciesJsonForDependency.getElements()) {
+                Dependency transitiveDependency = convertJsonObjectToDependencyObject(transitiveDependencyJson.getAsObject(), buildContext, crossModuleProperties);
+                if(!buildContext.getDependencies().contains(transitiveDependency)){
+                    buildContext.addDependency(dependency);
+                    if(transitiveDependency.isTransitive()){
+                        dependenciesForTransientSearch.add(transitiveDependency);
+                    }
+                }
+            }
+        }
+    }
+
+    private JsonArray getTransitiveDependenciesJsonFromDependency(Dependency dependency) {
+        File dependencyFolder = getPathToPackageDependencyAndLoadIfNotExists(dependency);
+        File transientDependencyFileForDependency = new File(dependencyFolder, "transitiveDependencies.json");
+        if (!transientDependencyFileForDependency.exists()) {
+            return null;
+        }
+
+        JsonParser parser = new JsonParser();
+        JsonElement parsedFile;
+        try {
+            parsedFile = parser.parse(new InputStreamReader(new BOMInputStream(new FileInputStream(transientDependencyFileForDependency)), "UTF-8"));
+        } catch (FileNotFoundException ex) {
+            throw new IllegalArgumentException("Cannot find file " + transientDependencyFileForDependency.getAbsolutePath(), ex);
+        } catch (JsonParseException ex) {
+            throw new IllegalArgumentException("Cannot parse file " + transientDependencyFileForDependency.getAbsolutePath(), ex);
+        } catch (Exception ex) {
+            throw new RuntimeException("Cannot parse file " + transientDependencyFileForDependency.getAbsolutePath(), ex);
+        }
+
+        if (!parsedFile.isObject()) {
+            throw new IllegalArgumentException("Build file " + transientDependencyFileForDependency.getAbsolutePath() + " in wrong format. Root should be json object.");
+        }
+
+        JsonObject parsedFileObject = parsedFile.getAsObject();
+        if (parsedFileObject.contains("dependencies")) {
+            return parsedFileObject.getElementByName("dependencies").getAsArray();
+        }
+
+        return null;
+    }
+
+    private boolean isDependencyIsSuppresedForTransientChildDependencies(CrossModuleProperties crossModuleProperties, Dependency dep) {
+        for (Dependency suppresedDependency : crossModuleProperties.getListOfDependenciesWithDisabledTransient()) {
+            if (suppresedDependency.equals(dep)) {
+                return true;
             }
         }
 
-        for (Dependency dependency : buildContext.getDependencies()) {
-            processDependency(dependency, "packages");
-        }
+        return false;
     }
 
     public File getPathToPluginDependencyAndLoadIfNotExists(Dependency dep) {
         if (!isDependencyExistsInLocalRepository(dep, "plugins")) {
-            processDependency(dep, "plugins");
+            downloadIfNotExists(dep, "plugins");
         }
 
         return getPathToDependencyInLocalRepository(dep, "plugins");
@@ -159,7 +250,7 @@ public class DependencyExtractor {
 
     public File getPathToPackageDependencyAndLoadIfNotExists(Dependency dep) {
         if (!isDependencyExistsInLocalRepository(dep, "packages")) {
-            processDependency(dep, "packages");
+            downloadIfNotExists(dep, "packages");
         }
 
         return getPathToDependencyInLocalRepository(dep, "packages");
@@ -176,7 +267,7 @@ public class DependencyExtractor {
         return !(!localRepositoryDependencyFolder.exists() || !new File(localRepositoryDependencyFolder, "package.properties").exists());
     }
 
-    private void processDependency(Dependency dependency, String category) {
+    private void downloadIfNotExists(Dependency dependency, String category) {
         if (!isDependencyExistsInLocalRepository(dependency, category)) {
             downloadDependency(getPathToDependencyInLocalRepository(dependency, category), dependency, category);
         }
