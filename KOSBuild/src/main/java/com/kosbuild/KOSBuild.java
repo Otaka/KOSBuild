@@ -3,6 +3,7 @@ package com.kosbuild;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.dependencies.DependencyExtractor;
 import com.kosbuild.config.Config;
+import com.kosbuild.config.CrossModuleProperties;
 import com.kosbuild.jsonparser.FieldValuePair;
 import com.kosbuild.jsonparser.JsonArray;
 import com.kosbuild.jsonparser.JsonElement;
@@ -40,10 +41,10 @@ public class KOSBuild {
             throw new IllegalArgumentException("Cannot find file " + buildFileName + " in current working directory " + new File(".").getAbsolutePath());
         }
 
-        runBuildFile(buildFile, new String[]{AbstractPlugin.CLEAN, AbstractPlugin.COMPILE});
+        runBuildFile(buildFile, new String[]{AbstractPlugin.CLEAN, AbstractPlugin.COMPILE},new CrossModuleProperties());
     }
 
-    public void runBuildFile(File buildFile, String[] goals) throws IOException {
+    public void runBuildFile(File buildFile, String[] goals, CrossModuleProperties crossModuleProperties) throws IOException {
         BuildContext buildContext = new BuildContext();
         buildContext.setBuildFile(buildFile);
         buildContext.setProjectFolder(buildFile.getParentFile());
@@ -64,7 +65,7 @@ public class KOSBuild {
         buildContext.setVersion(version);
 
         DependencyExtractor dependencyManager = new DependencyExtractor();
-        dependencyManager.collectDependencies(parsedFile, buildContext);
+        dependencyManager.collectDependencies(parsedFile, buildContext, crossModuleProperties);
         dependencyManager.collectPlugins(parsedFile, buildContext);
 
         LifeCycleExecutor lifeCycleExecutor = new LifeCycleExecutor();
@@ -125,7 +126,7 @@ public class KOSBuild {
         return result;
     }
 
-    protected JsonObject readAndParseFile(File buildFile) {
+    protected  JsonObject readAndParseFile(File buildFile) {
         JsonParser parser = new JsonParser();
         JsonElement parsedFile;
         try {
