@@ -7,9 +7,12 @@ import org.visualeagle.gui.components.ComponentEditorWindow;
 import org.visualeagle.utils.ChunkedTextCollector;
 import java.awt.Color;
 import java.awt.HeadlessException;
+import java.awt.event.ActionEvent;
+import java.io.File;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
 import org.visualeagle.utils.WindowLocationService;
@@ -35,13 +38,14 @@ public class MainWindow extends JFrame {
         title = new ChunkedTextCollector(event -> {
             setTitle(event);
         });
-        
+
         setIconImage(ImageManager.get().getImage("eagle"));
 
         title.setTitle("main", "Visual Eagle");
         title.setTitle("modified", "");
         title.setTitle("filename", "");
         Lookup.get().put("title", title);
+        Lookup.get().put(ActionManager.class, new ActionManager());
 
         windowLocationService = new WindowLocationService();
         getRootPane().putClientProperty("name", "mainWindow");
@@ -65,7 +69,17 @@ public class MainWindow extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         mainMenu = new MainMenu();
         setJMenuBar(mainMenu.constructMainMenu());
-        Lookup.get().put(MainWindow.class,this);
+        Lookup.get().put(MainWindow.class, this);
+        Lookup.get().get(ActionManager.class).registerAction("open_project", this::openProject);
+    }
+
+    private void openProject(ActionEvent actionEvent) {
+        File file = new ProjectDirectoryChooser().chooseFolder(Lookup.get().get(MainWindow.class));
+        if (file != null) {
+            System.out.println("Open project = " + file.getAbsolutePath());
+        } else {
+            System.out.println("No project directory was selected");
+        }
     }
 
     private void createProjectNaviagionWindow() {

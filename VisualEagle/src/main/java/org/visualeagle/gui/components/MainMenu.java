@@ -8,6 +8,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
+import org.visualeagle.gui.ActionManager;
 import org.visualeagle.gui.MainWindow;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
@@ -16,6 +17,12 @@ import org.visualeagle.utils.Lookup;
  * @author Dmitry
  */
 public class MainMenu {
+
+    private ActionManager actionManager;
+
+    public MainMenu() {
+        actionManager = Lookup.get().get(ActionManager.class);
+    }
 
     public JMenuBar constructMainMenu() {
         JMenuBar menuBar = new JMenuBar();
@@ -35,10 +42,10 @@ public class MainMenu {
 
         fileMenu.addSeparator();
         fileMenu.add(createJMenuItem("Save", "save_file", "ctrl S", "save"));
-        fileMenu.add(createJMenuItem("Save As...", "save_file_as", null,"save_as"));
+        fileMenu.add(createJMenuItem("Save As...", "save_file_as", null, "save_as"));
         fileMenu.add(createJMenuItem("Save All", "save_all", null, "save_all"));
         fileMenu.addSeparator();
-        
+
         fileMenu.add(createJMenuItem("Exit", "exit", null));
         return fileMenu;
     }
@@ -74,7 +81,7 @@ public class MainMenu {
         JMenu fileMenu = new JMenu("Help");
         fileMenu.setMnemonic('H');
 
-        fileMenu.add(createJMenuItem("Help Content", "help_content", null,"help"));
+        fileMenu.add(createJMenuItem("Help Content", "help_content", null, "help"));
         fileMenu.add(createJMenuItem("About", "help_about", null));
         return fileMenu;
     }
@@ -93,14 +100,7 @@ public class MainMenu {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Action [" + action + "]");
-                if (action.equals("open_project")) {
-                    File file = new ProjectDirectoryChooser().chooseFolder(Lookup.get().get(MainWindow.class));
-                    if(file!=null){
-                        System.out.println("File = " + file.getAbsolutePath());
-                    }else{
-                        System.out.println("No file was selected");
-                    }
-                }
+                actionManager.fire(action);
             }
         });
 
