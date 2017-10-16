@@ -11,6 +11,7 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
+import javax.swing.JInternalFrame;
 import javax.swing.SwingUtilities;
 import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.utils.ImageManager;
@@ -85,6 +86,7 @@ public class MainWindow extends JFrame {
     private void createProjectNaviagionWindow() {
         projectNavigationWindow = new ProjectNavigationWindow("Projects Navigation", true, false, false, false);
         projectNavigationWindow.getRootPane().putClientProperty("name", "ProjectNavigations");
+        projectNavigationWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));
         windowLocationService.setInitialState(projectNavigationWindow, "0%", "0%", "20%", "50%", false);
         windowLocationService.register(projectNavigationWindow);
         projectNavigationWindow.setVisible(true);
@@ -94,6 +96,7 @@ public class MainWindow extends JFrame {
 
     private void createComponentEditorWindow() {
         componentEditorWindow = new ComponentEditorWindow("Component Editor", true, false, false, false);
+        componentEditorWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));
         componentEditorWindow.getRootPane().putClientProperty("name", "ComponentEditor");
         windowLocationService.setInitialState(componentEditorWindow, "0%", "50%", "20%", "50%", false);
         windowLocationService.register(componentEditorWindow);
@@ -104,6 +107,7 @@ public class MainWindow extends JFrame {
 
     private void createEditorWindow() {
         editorWindow = new EditorWindow("Editor", true, false, false, false);
+        editorWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));
         editorWindow.getRootPane().putClientProperty("name", "Editor");
         windowLocationService.setInitialState(editorWindow, "20%", "0%", "80%", "100%", false);
         windowLocationService.register(editorWindow);
