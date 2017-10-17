@@ -11,7 +11,6 @@ public class Dependency {
     private String version;
     private String compiler;
     private boolean transitive;
-    private boolean includeWithoutPrefix;
     private String ownerProject;
 
     public void setOwnerProject(String ownerProject) {
@@ -21,26 +20,14 @@ public class Dependency {
     public String getOwnerProject() {
         return ownerProject;
     }
-    
-    
 
     public String formatPath() {
-        if (compiler == null) {
-            return name + "/" + version + "/";
+        if (getCompiler() == null) {
+            return getName() + "/" + getVersion() + "/";
         } else {
-            return name + "/" + version + "/" + compiler + "/";
+            return getName() + "/" + getVersion() + "/" + getCompiler().replace(":", "_") + "/";
         }
     }
-
-    public void setIncludeWithoutPrefix(boolean includeWithoutPrefix) {
-        this.includeWithoutPrefix = includeWithoutPrefix;
-    }
-
-    public boolean isIncludeWithoutPrefix() {
-        return includeWithoutPrefix;
-    }
-    
-    
 
     public void setTransitive(boolean transitive) {
         this.transitive = transitive;
@@ -49,8 +36,6 @@ public class Dependency {
     public boolean isTransitive() {
         return transitive;
     }
-    
-    
 
     public String getName() {
         return name;
@@ -81,10 +66,10 @@ public class Dependency {
 
     @Override
     public String toString() {
-        if(compiler==null){
-            return name + ":" + version;
+        if (getCompiler() == null) {
+            return getName() + ":" + getVersion();
         }
-        return name + ":" + version + ":" + compiler;
+        return getName() + ":" + getVersion() + ":" + getCompiler();
     }
 
     @Override

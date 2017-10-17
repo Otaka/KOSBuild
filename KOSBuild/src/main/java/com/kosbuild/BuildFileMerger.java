@@ -4,11 +4,15 @@ import com.kosbuild.jsonparser.FieldValuePair;
 import com.kosbuild.jsonparser.JsonArray;
 import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.jsonparser.JsonObject;
+import com.kosbuild.utils.Utils;
+import org.slf4j.Logger;
 
 /**
  * @author Dmitry
  */
 public class BuildFileMerger {
+
+    static final Logger log = Utils.getLogger();
 
     public JsonObject mergeParsedBuildFiles(JsonObject parentJsonObject, JsonObject childJsonObject) {
         if (parentJsonObject.contains("override")) {
@@ -43,7 +47,7 @@ public class BuildFileMerger {
 
                 JsonElement parentElement = parentJsonObject.getElementByName(name);
                 if (parentElement == null) {
-                    System.err.println("You try to add elements to [" + name + "], but it does not exists in parent build file");
+                    log.error("You try to add elements to [" + name + "], but it does not exists in parent build file");
                 } else if (!parentElement.isArray()) {
                     throw new IllegalArgumentException("You try to do +" + name + ". But this element in parent build script has type " + parentElement.getClass().getSimpleName() + ", but should be JsonArray");
                 } else {
@@ -58,8 +62,8 @@ public class BuildFileMerger {
                     parentJsonObject.removeElementByName(name);
                 }
                 parentJsonObject.addElement(name, element);
-            } else if (element.isObject()) {                
-                if(!parentJsonObject.contains(name)){
+            } else if (element.isObject()) {
+                if (!parentJsonObject.contains(name)) {
                     parentJsonObject.addElement(name, new JsonObject());
                 }
 

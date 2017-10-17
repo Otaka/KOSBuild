@@ -19,7 +19,8 @@ public abstract class AbstractPlugin {
     public static final String PACKAGE = "package";
     public static final String VERIFY = "verify";
     public static final String INSTALL = "install";
-    public static final String DEPLOY = "deploy";
+    public static final String DEPLOY_LOCAL = "deploylocal";
+    public static final String DEPLOY_REMOTE = "deployremote";
 
     public abstract String name();
 

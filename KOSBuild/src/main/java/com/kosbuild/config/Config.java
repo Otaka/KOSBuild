@@ -4,17 +4,19 @@ import com.kosbuild.jsonparser.JsonArray;
 import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.jsonparser.JsonObject;
 import com.kosbuild.jsonparser.JsonParser;
+import com.kosbuild.utils.Utils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
 
 /**
  * @author Dmitry
  */
 public class Config {
-
+    static final Logger log = Utils.getLogger();
     private static Config instance = new Config();
 
     private Repository localRepository;
@@ -53,7 +55,7 @@ public class Config {
 
         localRepository = parseRepository(repositoryConfig.getElementByName("local").getAsObject(), true, "localRepository_", 0);
         if (!repositoryConfig.contains("remote")) {
-            System.out.println("There is no section [repositories.remote] in config file [" + configFile.getAbsolutePath() + "]. \nEnter in offline mode!");
+            log.warn("There is no section [repositories.remote] in config file [" + configFile.getAbsolutePath() + "]. \nEnter in offline mode!");
         } else {
             JsonArray remoteRepositoriesArrayJson = repositoryConfig.getElementByName("remote").getAsArray();
             int repositoryIndex = 1;

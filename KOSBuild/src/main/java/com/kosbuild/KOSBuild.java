@@ -1,5 +1,7 @@
 package com.kosbuild;
 
+import com.kosbuild.utils.Utils;
+import com.kosbuild.config.BuildArguments;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.dependencies.DependencyExtractor;
 import com.kosbuild.config.Config;
@@ -11,7 +13,6 @@ import com.kosbuild.jsonparser.JsonObject;
 import com.kosbuild.jsonparser.JsonParseException;
 import com.kosbuild.jsonparser.JsonParser;
 import com.kosbuild.jsonparser.JsonString;
-import com.kosbuild.plugins.AbstractPlugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -19,29 +20,88 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.input.BOMInputStream;
+import org.slf4j.Logger;
 
 /**
  * @author Dmitry
  */
 public class KOSBuild {
 
+    static final Logger log = Utils.getLogger();
     public static final String buildFileName = "kosbuild.json";
     protected static String buildFileExtension = "json";
+    private static final Pattern replaceholderMatcher = Pattern.compile("\\$\\{(.*?)\\}", Pattern.MULTILINE);
 
     /**
      * Run the build. Assume that "buildFile" is located in current directory
      */
-    public void run() throws FileNotFoundException, IOException {
+    public void run(String[] args) throws FileNotFoundException, IOException {
+        BuildArguments buildArguments = parseCommandLineArguments(args);
         loadConfig();
-        File buildFile = new File("./example/" + buildFileName);
-        if (!buildFile.exists()) {
-            throw new IllegalArgumentException("Cannot find file " + buildFileName + " in current working directory " + new File(".").getAbsolutePath());
+        configureLogger(buildArguments);
+        for (File buildFile : buildArguments.getBuildFiles()) {
+            runBuildFile(buildFile, buildArguments.getStepsToExecute().toArray(new String[0]), new CrossModuleProperties());
+        }
+    }
+
+    private void configureLogger(BuildArguments buildArguments) {
+        Utils.changeLogLevel(buildArguments.getLogLevel());
+    }
+
+    private BuildArguments parseCommandLineArguments(String[] args) {
+        Stack<String> argsStack = new Stack<>();
+        for (int i = args.length - 1; i >= 0; i--) {
+            argsStack.push(args[i]);
         }
 
-        runBuildFile(buildFile, new String[]{AbstractPlugin.CLEAN, AbstractPlugin.COMPILE},new CrossModuleProperties());
+        BuildArguments ba = new BuildArguments();
+        Pattern customPropertiesPatternWithArgument = Pattern.compile("^-D(.+)=(.+)$");
+        while (!argsStack.isEmpty()) {
+            String arg = argsStack.pop();
+            if (arg.equals("-f")) {
+                String buildFilePath = argsStack.pop();
+                File buildFile = new File(buildFilePath, "kosbuild.json");
+                if (!buildFile.exists()) {
+                    throw new IllegalArgumentException("Cannot find build file [" + buildFile.getAbsolutePath() + "]");
+                }
+
+                ba.getBuildFiles().add(buildFile);
+            } else if (arg.startsWith("-D")) {
+                String argName;
+                String argValue;
+                Matcher matcher = customPropertiesPatternWithArgument.matcher(arg);
+                if (matcher.matches()) {
+                    argName = matcher.group(1);
+                    argValue = matcher.group(2);
+                } else {
+                    argName = arg.substring("-D".length());
+                    argValue = "true";
+                }
+
+                ba.getCustomArguments().put(argName, argValue);
+            } else if (arg.equalsIgnoreCase("-verbose")) {
+                ba.setLogLevel("DEBUG");
+            } else if (new LifeCycleExecutor().isLifeCycleStep(arg)) {
+                ba.getStepsToExecute().add(arg);
+            } else {
+                throw new IllegalArgumentException("Unknown argument [" + arg + "]");
+            }
+        }
+
+        if (ba.getBuildFiles().isEmpty()) {
+            File buildFile = new File("kosbuild.json");
+            if (!buildFile.exists()) {
+                throw new IllegalArgumentException("Cannot find build file [" + buildFile.getAbsolutePath() + "]");
+            }
+
+            ba.getBuildFiles().add(buildFile);
+        }
+
+        return ba;
     }
 
     public void runBuildFile(File buildFile, String[] goals, CrossModuleProperties crossModuleProperties) throws IOException {
@@ -53,9 +113,7 @@ public class KOSBuild {
             replacePlaceholders(parsedFile, parseProperties(parsedFile.getElementByName("properties").getAsObject()));
         }
         String projectName = Utils.getStringProperty("name", parsedFile, null);
-        if (projectName == null) {
-            throw new IllegalArgumentException("Mandatory [name] property is not found in [" + buildFile.getAbsolutePath() + "] build file");
-        }
+        validateProjectName(projectName, buildFile);
 
         String version = Utils.getStringProperty("version", parsedFile, null);
         if (version == null) {
@@ -70,6 +128,19 @@ public class KOSBuild {
 
         LifeCycleExecutor lifeCycleExecutor = new LifeCycleExecutor();
         lifeCycleExecutor.execute(buildContext, goals);
+    }
+
+    private void validateProjectName(String projectName, File buildFile) {
+        if (projectName == null) {
+            throw new IllegalArgumentException("Mandatory [name] property is not found in [" + buildFile.getAbsolutePath() + "] build file");
+        }
+
+        String[] badSymbols = new String[]{" ", "\\", "/", "?", "(", ")", "[", "]", ":", ";", "^", "&", "*", "+", "#", "@", "!", "%", ".", ",", "\"", "\'", "$"};
+        for (String badSymbol : badSymbols) {
+            if (projectName.contains(badSymbol)) {
+                throw new IllegalArgumentException("Project name [" + projectName + "] in build file [" + buildFile.getAbsolutePath() + "] contains wrong symbol [" + badSymbol + "]");
+            }
+        }
     }
 
     private void loadConfig() throws FileNotFoundException {
@@ -94,8 +165,6 @@ public class KOSBuild {
             }
         }
     }
-
-    private static final Pattern replaceholderMatcher = Pattern.compile("\\$\\{(.*?)\\}", Pattern.MULTILINE);
 
     private String replacePlaceholder(String value, Map<String, String> propertiesMap) {
         if (!value.contains("$")) {
@@ -126,7 +195,7 @@ public class KOSBuild {
         return result;
     }
 
-    protected  JsonObject readAndParseFile(File buildFile) {
+    protected JsonObject readAndParseFile(File buildFile) {
         JsonParser parser = new JsonParser();
         JsonElement parsedFile;
         try {

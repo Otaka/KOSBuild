@@ -1,10 +1,15 @@
-package com.kosbuild;
+package com.kosbuild.utils;
 
+import ch.qos.logback.classic.Level;
 import com.kosbuild.jsonparser.JsonArray;
 import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.jsonparser.JsonObject;
 import java.io.File;
 import java.net.URISyntaxException;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Dmitry
@@ -70,5 +75,27 @@ public class Utils {
         }
 
         return values;
+    }
+
+    public static Logger getLogger() {
+        try {
+            throw new RuntimeException();
+        } catch (Exception ex) {
+            String[] frames = ExceptionUtils.getStackFrames(ex);
+            String line=frames[2];
+            String className=StringUtils.substringBefore( StringUtils.substringBetween(line, "(", "."), ")");
+            return LoggerFactory.getLogger(className);
+        }
+    }
+    
+    public static void changeLogLevel(String level) {
+        level = level.toUpperCase();
+        Logger logger=LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+        if(! (logger instanceof ch.qos.logback.classic.Logger)){
+            logger.error("Cannot switch logger level, becase underlying logger expected to be ch.qos.logback.classic.Logger, but it is "+logger.getClass().getName());
+            return;
+        }
+        ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) logger;
+        rootLogger.setLevel(Level.toLevel(level));
     }
 }

@@ -1,7 +1,7 @@
 package com.kosbuild.dependencies;
 
 import com.kosbuild.LifeCycleExecutor;
-import com.kosbuild.Utils;
+import com.kosbuild.utils.Utils;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.config.Config;
 import com.kosbuild.config.CrossModuleProperties;
@@ -29,9 +29,11 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -115,9 +117,11 @@ public class DependencyExtractor {
         if (LifeCycleExecutor.arrayIndexOfIgnoreCase(LifeCycleExecutor.cleanStage, stepString) >= 0) {
             return stepString;
         }
+
         if (LifeCycleExecutor.arrayIndexOfIgnoreCase(LifeCycleExecutor.buildStage, stepString) >= 0) {
             return stepString;
         }
+
         throw new IllegalArgumentException("[runOnStep] property contains wrong step [" + stepString + "]");
     }
 
@@ -128,13 +132,8 @@ public class DependencyExtractor {
             }
 
             JsonArray dependencies = jsonObject.getElementByName("dependencies").getAsArray();
-            Set<Dependency> dependenciesForTransientSearch = new HashSet<Dependency>();
             for (JsonElement element : dependencies.getElements()) {
                 Dependency dependency = convertJsonObjectToDependencyObject(element.getAsObject(), buildContext, crossModuleProperties);
-                if (dependency.isTransitive()) {
-                    dependenciesForTransientSearch.add(dependency);
-                }
-
                 buildContext.addDependency(dependency);
             }
 
@@ -142,8 +141,46 @@ public class DependencyExtractor {
                 downloadIfNotExists(dependency, "packages");
             }
 
-            processTransitiveDependencies(buildContext, crossModuleProperties, dependenciesForTransientSearch);
+            searchTransitiveDependencies(buildContext, crossModuleProperties);
         }
+    }
+
+    private void searchTransitiveDependencies(BuildContext buildContext, CrossModuleProperties crossModuleProperties) {
+        Set<Dependency> projectDependencies = buildContext.getDependencies();
+        List<Dependency> dependenciesWithTransitivity = new ArrayList<>();
+        for (Dependency dep : projectDependencies) {
+            if (dep.isTransitive()) {
+                dependenciesWithTransitivity.add(dep);
+            }
+        }
+        Set<Dependency> alreadySeenDependencies = new HashSet<>();
+        while (!dependenciesWithTransitivity.isEmpty()) {
+            Dependency dep = dependenciesWithTransitivity.remove(dependenciesWithTransitivity.size() - 1);
+            if (alreadySeenDependencies.contains(dep)) {
+                continue;
+            }
+
+            downloadIfNotExists(dep, "packages");
+            projectDependencies.add(dep);
+            alreadySeenDependencies.add(dep);
+
+            List<Dependency> transitiveDependencies = getListOfTransitiveDependeciesForDependencyNotReqursive(buildContext, dep, crossModuleProperties);
+            dependenciesWithTransitivity.addAll(transitiveDependencies);
+        }
+    }
+
+    private List<Dependency> getListOfTransitiveDependeciesForDependencyNotReqursive(BuildContext buildContext, Dependency dependency, CrossModuleProperties crossModuleProperties) {
+        JsonArray array = getTransitiveDependenciesJsonFromDependency(dependency);
+        if (array == null) {
+            return Collections.EMPTY_LIST;
+        }
+        List<Dependency> result = new ArrayList<>();
+        for (JsonElement dependencyJsonElement : array.getElements()) {
+            Dependency childDependency = convertJsonObjectToDependencyObject(dependencyJsonElement.getAsObject(), buildContext, crossModuleProperties);
+            result.add(childDependency);
+        }
+
+        return result;
     }
 
     private Dependency convertJsonObjectToDependencyObject(JsonObject jsonObject, BuildContext buildContext, CrossModuleProperties crossModuleProperties) {
@@ -153,55 +190,33 @@ public class DependencyExtractor {
         String nameAndVersion = jsonObject.getElementByName("name").getAsString();
         boolean transitive = Utils.getBooleanProperty("transitive", jsonObject, Boolean.FALSE);
 
-        boolean includeWithoutPrefix = Utils.getBooleanProperty("includeWithoutPrefix", jsonObject, Boolean.FALSE);
-
         if (!nameAndVersion.contains(":")) {
             throw new IllegalArgumentException("Dependency name [" + nameAndVersion + "] is in wrong format. Proper format \"NAME:VERSION\"");
         }
 
         String name = nameAndVersion.substring(0, nameAndVersion.indexOf(':'));
         String version = nameAndVersion.substring(nameAndVersion.indexOf(':') + 1);
+        if (!compiler.contains(":")) {
+            throw new IllegalArgumentException("Dependency [" + nameAndVersion + "] has compiler string [" + compiler + "] without version. Should follow the pattern [COMPILER:VERSION]");
+        }
         dependency.setCompiler(compiler);
         dependency.setName(name);
         dependency.setVersion(version);
         if (transitive) {
             dependency.setTransitive(true);
-            if (isDependencyIsSuppresedForTransientChildDependencies(crossModuleProperties, dependency)) {
-                dependency.setTransitive(false);
-            }
+            //   if (isDependencyIsSuppresedForTransientChildDependencies(crossModuleProperties, dependency)) {
+            //       dependency.setTransitive(false);
+            //  }
         } else {
             dependency.setTransitive(false);
         }
 
-        dependency.setIncludeWithoutPrefix(includeWithoutPrefix);
         return dependency;
-    }
-
-    private void processTransitiveDependencies(BuildContext buildContext, CrossModuleProperties crossModuleProperties, Set<Dependency> dependenciesForTransientSearch) {
-        while (!dependenciesForTransientSearch.isEmpty()) {
-            Iterator<Dependency> iterator = dependenciesForTransientSearch.iterator();
-            Dependency dependency = iterator.next();
-            iterator.remove();
-            if (!dependency.isTransitive()) {
-                continue;
-            }
-
-            JsonArray transitiveDependenciesJsonForDependency = getTransitiveDependenciesJsonFromDependency(dependency);
-            for (JsonElement transitiveDependencyJson : transitiveDependenciesJsonForDependency.getElements()) {
-                Dependency transitiveDependency = convertJsonObjectToDependencyObject(transitiveDependencyJson.getAsObject(), buildContext, crossModuleProperties);
-                if(!buildContext.getDependencies().contains(transitiveDependency)){
-                    buildContext.addDependency(dependency);
-                    if(transitiveDependency.isTransitive()){
-                        dependenciesForTransientSearch.add(transitiveDependency);
-                    }
-                }
-            }
-        }
     }
 
     private JsonArray getTransitiveDependenciesJsonFromDependency(Dependency dependency) {
         File dependencyFolder = getPathToPackageDependencyAndLoadIfNotExists(dependency);
-        File transientDependencyFileForDependency = new File(dependencyFolder, "transitiveDependencies.json");
+        File transientDependencyFileForDependency = new File(dependencyFolder, "packageInfo.json");
         if (!transientDependencyFileForDependency.exists()) {
             return null;
         }
@@ -230,6 +245,7 @@ public class DependencyExtractor {
         return null;
     }
 
+    /*
     private boolean isDependencyIsSuppresedForTransientChildDependencies(CrossModuleProperties crossModuleProperties, Dependency dep) {
         for (Dependency suppresedDependency : crossModuleProperties.getListOfDependenciesWithDisabledTransient()) {
             if (suppresedDependency.equals(dep)) {
@@ -238,8 +254,7 @@ public class DependencyExtractor {
         }
 
         return false;
-    }
-
+    }*/
     public File getPathToPluginDependencyAndLoadIfNotExists(Dependency dep) {
         if (!isDependencyExistsInLocalRepository(dep, "plugins")) {
             downloadIfNotExists(dep, "plugins");
@@ -256,7 +271,7 @@ public class DependencyExtractor {
         return getPathToDependencyInLocalRepository(dep, "packages");
     }
 
-    private File getPathToDependencyInLocalRepository(Dependency dependency, String category) {
+    public File getPathToDependencyInLocalRepository(Dependency dependency, String category) {
         String localRepositoryPath = Config.get().getLocalRepository().getPath();
         File localRepositoryDependencyFolder = new File(localRepositoryPath + category + "/", dependency.formatPath());
         return localRepositoryDependencyFolder;

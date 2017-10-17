@@ -20,13 +20,13 @@ public class LifeCycleExecutorTest {
         String[] array = lce.obtainFullStepsList(new String[]{AbstractPlugin.INSTALL});
         assertArrayEquals(new String[]{
             AbstractPlugin.VALIDATE, AbstractPlugin.COMPILE_SUBMODULE, AbstractPlugin.COMPILE,
-            AbstractPlugin.TEST, AbstractPlugin.PACKAGE, AbstractPlugin.VERIFY, AbstractPlugin.INSTALL
+            AbstractPlugin.TEST, AbstractPlugin.INSTALL
         }, array);
 
         String[] array2 = lce.obtainFullStepsList(new String[]{AbstractPlugin.CLEAN, AbstractPlugin.INSTALL});
         assertArrayEquals(new String[]{
             AbstractPlugin.CLEAN, AbstractPlugin.VALIDATE, AbstractPlugin.COMPILE_SUBMODULE, AbstractPlugin.COMPILE,
-            AbstractPlugin.TEST, AbstractPlugin.PACKAGE, AbstractPlugin.VERIFY, AbstractPlugin.INSTALL
+            AbstractPlugin.TEST, AbstractPlugin.INSTALL
         }, array2);
     }
 }
