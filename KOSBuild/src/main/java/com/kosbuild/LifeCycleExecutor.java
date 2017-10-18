@@ -70,10 +70,11 @@ public class LifeCycleExecutor {
                     log.info("Run step [" + currentStep + "]");
                     logWritten = true;
                 }
-
+                
                 AbstractPlugin pluginObject = plugin.getDynamicPluginObject();
                 try {
-                    if(!pluginObject.call(buildContext, plugin, currentStep)){
+                    
+                    if(plugin.call(buildContext, currentStep)==AbstractPlugin.ERROR_RESULT){
                         throw new RuntimeException("Error while execute plugin [" + pluginObject + "] on step [" + currentStep + "]");
                     }
                 } catch (Exception ex) {

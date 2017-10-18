@@ -1,11 +1,13 @@
 package com.kosbuild;
 
+import com.google.gson.Gson;
 import com.kosbuild.utils.Utils;
 import com.kosbuild.config.BuildArguments;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.dependencies.DependencyExtractor;
 import com.kosbuild.config.Config;
 import com.kosbuild.config.CrossModuleProperties;
+import com.kosbuild.config.RunPluginCommandLine;
 import com.kosbuild.jsonparser.FieldValuePair;
 import com.kosbuild.jsonparser.JsonArray;
 import com.kosbuild.jsonparser.JsonElement;
@@ -13,17 +15,24 @@ import com.kosbuild.jsonparser.JsonObject;
 import com.kosbuild.jsonparser.JsonParseException;
 import com.kosbuild.jsonparser.JsonParser;
 import com.kosbuild.jsonparser.JsonString;
+import com.kosbuild.plugins.PluginConfig;
+import com.kosbuild.plugins.PluginManager;
+import com.kosbuild.plugins.PluginResult;
+import com.kosbuild.plugins.PluginResults;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 
 /**
@@ -39,17 +48,78 @@ public class KOSBuild {
     /**
      * Run the build. Assume that "buildFile" is located in current directory
      */
-    public void run(String[] args) throws FileNotFoundException, IOException {
+    public void run(String[] args) throws FileNotFoundException, IOException, Exception {
         BuildArguments buildArguments = parseCommandLineArguments(args);
         loadConfig();
         configureLogger(buildArguments);
-        for (File buildFile : buildArguments.getBuildFiles()) {
-            runBuildFile(buildFile, buildArguments.getStepsToExecute().toArray(new String[0]), new CrossModuleProperties());
+        if (buildArguments.getRunPluginCommandLine() != null) {
+            runPlugin(buildArguments);
+        } else {
+            for (File buildFile : buildArguments.getBuildFiles()) {
+                runBuildFile(buildFile, buildArguments.getStepsToExecute().toArray(new String[0]), new CrossModuleProperties());
+            }
         }
+    }
+
+    public void runPlugin(BuildArguments buildArguments) throws Exception {
+        for (File buildFile : buildArguments.getBuildFiles()) {
+            PluginResults result= runPlugin(buildFile, buildArguments.getRunPluginCommandLine());
+            System.out.println("--Start Plugin result for ["+buildFile.getAbsolutePath()+"]");
+            String value=new Gson().toJson(result);
+            System.out.println(value);
+            System.out.println("--End Plugin result for ["+buildFile.getAbsolutePath()+"]");
+        }        
     }
 
     private void configureLogger(BuildArguments buildArguments) {
         Utils.changeLogLevel(buildArguments.getLogLevel());
+    }
+
+    public void runBuildFile(File buildFile, String[] goals, CrossModuleProperties crossModuleProperties) throws IOException {
+        BuildContext buildContext = readBuildFile(buildFile, crossModuleProperties);
+
+        LifeCycleExecutor lifeCycleExecutor = new LifeCycleExecutor();
+        lifeCycleExecutor.execute(buildContext, goals);
+    }
+
+    public PluginResults runPlugin(File buildFile, RunPluginCommandLine runPluginCommandLine) throws IOException, Exception {
+        List<PluginResult> pluginResult = new ArrayList<>();
+        BuildContext buildContext = readBuildFile(buildFile,new CrossModuleProperties());
+        PluginConfig pluginConfig = PluginManager.get().loadPluginConfig(runPluginCommandLine.getPluginNameVersion());
+        if (runPluginCommandLine.getRunOnThisSteps() == null) {
+            Object result = pluginConfig.call(buildContext);
+            pluginResult.add(new PluginResult(runPluginCommandLine.getPluginNameVersion(), result));
+        } else {
+            for (String step : runPluginCommandLine.getRunOnThisSteps()) {
+                Object result = pluginConfig.call(buildContext, step);
+                pluginResult.add(new PluginResult(runPluginCommandLine.getPluginNameVersion(), result));
+            }
+        }
+
+        return new PluginResults(pluginResult);
+    }
+
+    private BuildContext readBuildFile(File buildFile, CrossModuleProperties crossModuleProperties) throws IOException {
+        BuildContext buildContext = new BuildContext();
+        buildContext.setBuildFile(buildFile);
+        buildContext.setProjectFolder(buildFile.getParentFile());
+        JsonObject parsedFile = readAndParseFile(buildFile);
+        if (parsedFile.contains("properties")) {
+            replacePlaceholders(parsedFile, parseProperties(parsedFile.getElementByName("properties").getAsObject()));
+        }
+        String projectName = Utils.getStringProperty("name", parsedFile, null);
+        validateProjectName(projectName, buildFile);
+
+        String version = Utils.getStringProperty("version", parsedFile, null);
+        if (version == null) {
+            throw new IllegalArgumentException("Mandatory [version] property is not found in [" + buildFile.getAbsolutePath() + "] build file");
+        }
+        buildContext.setApplicationName(projectName);
+        buildContext.setVersion(version);
+        DependencyExtractor dependencyManager = new DependencyExtractor();
+        dependencyManager.collectDependencies(buildContext, crossModuleProperties);
+        dependencyManager.collectPlugins(buildContext);
+        return buildContext;
     }
 
     private BuildArguments parseCommandLineArguments(String[] args) {
@@ -83,6 +153,23 @@ public class KOSBuild {
                 }
 
                 ba.getCustomArguments().put(argName, argValue);
+            } else if (arg.equalsIgnoreCase("-runPlugin")) {
+                String plugin = argsStack.pop();
+                RunPluginCommandLine runPluginCommandLine = new RunPluginCommandLine();
+                runPluginCommandLine.setPluginNameVersion(plugin);
+                ba.setRunPluginCommandLine(runPluginCommandLine);
+            } else if (arg.equalsIgnoreCase("-runPluginOnStep")) {
+                String plugin = argsStack.pop();
+                RunPluginCommandLine runPluginCommandLine = new RunPluginCommandLine();
+                runPluginCommandLine.setPluginNameVersion(plugin);
+
+                String step = argsStack.pop();
+                String[] steps = StringUtils.splitPreserveAllTokens(step, ",");
+                for (int i = 0; i < steps.length; i++) {
+                    steps[i] = steps[i].trim();
+                }
+                runPluginCommandLine.setRunOnThisSteps(argsStack);
+                ba.setRunPluginCommandLine(runPluginCommandLine);
             } else if (arg.equalsIgnoreCase("-verbose")) {
                 ba.setLogLevel("DEBUG");
             } else if (new LifeCycleExecutor().isLifeCycleStep(arg)) {
@@ -102,32 +189,6 @@ public class KOSBuild {
         }
 
         return ba;
-    }
-
-    public void runBuildFile(File buildFile, String[] goals, CrossModuleProperties crossModuleProperties) throws IOException {
-        BuildContext buildContext = new BuildContext();
-        buildContext.setBuildFile(buildFile);
-        buildContext.setProjectFolder(buildFile.getParentFile());
-        JsonObject parsedFile = readAndParseFile(buildFile);
-        if (parsedFile.contains("properties")) {
-            replacePlaceholders(parsedFile, parseProperties(parsedFile.getElementByName("properties").getAsObject()));
-        }
-        String projectName = Utils.getStringProperty("name", parsedFile, null);
-        validateProjectName(projectName, buildFile);
-
-        String version = Utils.getStringProperty("version", parsedFile, null);
-        if (version == null) {
-            throw new IllegalArgumentException("Mandatory [version] property is not found in [" + buildFile.getAbsolutePath() + "] build file");
-        }
-        buildContext.setApplicationName(projectName);
-        buildContext.setVersion(version);
-
-        DependencyExtractor dependencyManager = new DependencyExtractor();
-        dependencyManager.collectDependencies(parsedFile, buildContext, crossModuleProperties);
-        dependencyManager.collectPlugins(parsedFile, buildContext);
-
-        LifeCycleExecutor lifeCycleExecutor = new LifeCycleExecutor();
-        lifeCycleExecutor.execute(buildContext, goals);
     }
 
     private void validateProjectName(String projectName, File buildFile) {

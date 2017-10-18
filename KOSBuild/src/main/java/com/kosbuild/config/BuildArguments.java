@@ -16,6 +16,16 @@ public class BuildArguments {
     private List<String> stepsToExecute = new ArrayList<>();
     private Map<String, String> customArguments = new HashMap<>();
     private String logLevel = "INFO";
+    private RunPluginCommandLine runPluginCommandLine;
+
+    public void setRunPluginCommandLine(RunPluginCommandLine runPluginCommandLine) {
+        this.runPluginCommandLine = runPluginCommandLine;
+    }
+
+    public RunPluginCommandLine getRunPluginCommandLine() {
+        return runPluginCommandLine;
+    }
+    
 
     public void setLogLevel(String logLevel) {
         this.logLevel = logLevel;

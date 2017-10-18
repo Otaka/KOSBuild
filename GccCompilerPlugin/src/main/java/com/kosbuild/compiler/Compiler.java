@@ -15,6 +15,7 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import static com.kosbuild.compiler.CompilerUtils.fixPath;
+import com.kosbuild.plugins.AbstractPlugin;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
@@ -28,7 +29,7 @@ public class Compiler {
 
     static final Logger log = Utils.getLogger();
 
-    public boolean build(BuildContext buildContext, PluginConfig pluginConfig) throws IOException {
+    public Object build(BuildContext buildContext, PluginConfig pluginConfig) throws IOException {
         log.info("Build project [" + buildContext.getProjectFolder().getAbsolutePath() + "]");
         File targetFolder = CompilerUtils.getTargetFolder(buildContext.getProjectFolder());
         if (!targetFolder.exists()) {
@@ -48,17 +49,17 @@ public class Compiler {
         List<File> processedObjectFiles = new ArrayList<>();
         Set<String> seenFileNames = new HashSet<>();
         if (!compile(buildContext, pluginConfig, sourceFilesExtensions, librariesPaths, librariesNames, processedObjectFiles, seenFileNames, stopOnFirstError, generateDebugInfo)) {
-            return false;
+            return AbstractPlugin.ERROR_RESULT;
         }
 
         if (resultBinaryType == BinaryType.APPLICATION) {
             log.info("Build project as executable application");
             if (!linking(pluginConfig, buildContext, librariesPaths, librariesNames)) {
-                return false;
+                return AbstractPlugin.ERROR_RESULT;
             }
             if (doObjCopy) {
                 if (!objCopyStage(pluginConfig, buildContext)) {
-                    return false;
+                    return AbstractPlugin.ERROR_RESULT;
                 }
             }
             if(!hasConsole){
@@ -67,11 +68,11 @@ public class Compiler {
         } else if (resultBinaryType == BinaryType.STATIC_LIBRARY) {
             log.info("Build project as static library");
             if (!makeStaticLibrary(pluginConfig, buildContext, processedObjectFiles)) {
-                return false;
+                return AbstractPlugin.ERROR_RESULT;
             }
         }
 
-        return true;
+        return AbstractPlugin.DONE_RESULT;
     }
     
     private void changeSubsystemFlag(BuildContext buildContext, PluginConfig pluginConfig) throws FileNotFoundException, IOException{

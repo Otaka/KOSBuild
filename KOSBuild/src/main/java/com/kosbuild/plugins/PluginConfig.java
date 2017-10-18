@@ -1,5 +1,6 @@
 package com.kosbuild.plugins;
 
+import com.kosbuild.config.BuildContext;
 import com.kosbuild.jsonparser.JsonObject;
 import java.io.File;
 
@@ -73,5 +74,11 @@ public class PluginConfig {
         return ""+name+":"+version;
     }
     
-    
+    public Object call(BuildContext buildContext, String currentStep) throws Exception{
+        return dynamicPluginObject.call(buildContext, this, currentStep);
+    }
+
+    public Object call(BuildContext buildContext) throws Exception{
+        return dynamicPluginObject.call(buildContext, this, "NO_STEP");
+    }
 }

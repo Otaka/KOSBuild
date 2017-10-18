@@ -14,7 +14,7 @@ public class PluginMain extends AbstractPlugin {
     static final Logger log = Utils.getLogger();
 
     @Override
-    public boolean call(BuildContext buildContext, PluginConfig pluginConfig, String currentStep) throws Exception {
+    public Object call(BuildContext buildContext, PluginConfig pluginConfig, String currentStep) throws Exception {
         if (currentStep.equals(AbstractPlugin.CLEAN)) {
             return new Cleaner().clean(buildContext, pluginConfig);
         } else if (currentStep.equals(AbstractPlugin.COMPILE)) {

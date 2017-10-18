@@ -3,6 +3,7 @@ package com.kosbuild.compiler;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.dependencies.Dependency;
 import com.kosbuild.dependencies.DependencyExtractor;
+import com.kosbuild.plugins.AbstractPlugin;
 import com.kosbuild.plugins.PluginConfig;
 import com.kosbuild.utils.StringBuilderWithPadding;
 import java.io.File;
@@ -18,7 +19,7 @@ import org.apache.commons.io.FileUtils;
  */
 public class Installer {
 
-    public boolean installStaticLibrary(BuildContext buildContext, PluginConfig pluginConfig) throws IOException {
+    public Object installStaticLibrary(BuildContext buildContext, PluginConfig pluginConfig) throws IOException {
         File targetFolder = CompilerUtils.getTargetFolder(buildContext.getProjectFolder());
         File resultArtifactFile = new File(targetFolder, buildContext.getApplicationName() + ".a");
         if (!resultArtifactFile.exists()) {
@@ -40,7 +41,7 @@ public class Installer {
         createIncludeFolderLink(buildContext, pathToDependencyFolder);
         createPackageInfoFile(pathToDependencyFolder, buildContext);
         createPackageProperties(pathToDependencyFolder);
-        return true;
+        return AbstractPlugin.DONE_RESULT;
     }
 
     private void copyResultArtifact(File resultArtifactFile, File pathToDependencyFolder) throws IOException {

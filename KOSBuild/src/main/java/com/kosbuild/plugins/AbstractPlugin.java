@@ -1,15 +1,14 @@
 package com.kosbuild.plugins;
 
 import com.kosbuild.config.BuildContext;
-import com.kosbuild.jsonparser.JsonArray;
-import com.kosbuild.jsonparser.JsonElement;
-import com.kosbuild.jsonparser.JsonObject;
 
 /**
  * @author Dmitry
  */
 public abstract class AbstractPlugin {
-
+    public static final String ERROR_RESULT="ERROR";
+    public static final String DONE_RESULT="DONE";
+            
     public static final String CLEAN = "clean";
 
     public static final String VALIDATE = "validate";
@@ -26,14 +25,11 @@ public abstract class AbstractPlugin {
 
     public abstract String version();
 
-    public abstract boolean call(BuildContext buildContext, PluginConfig pluginConfig, String currentStep) throws Exception;
+    public abstract Object call(BuildContext buildContext, PluginConfig pluginConfig, String currentStep) throws Exception;
 
     public void init() {
     }
 
-    ;
-
     public abstract String[] getStages();
 
-    
 }

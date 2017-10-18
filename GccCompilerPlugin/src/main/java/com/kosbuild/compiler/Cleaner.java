@@ -1,6 +1,7 @@
 package com.kosbuild.compiler;
 
 import com.kosbuild.config.BuildContext;
+import com.kosbuild.plugins.AbstractPlugin;
 import com.kosbuild.plugins.PluginConfig;
 import com.kosbuild.utils.Utils;
 import java.io.File;
@@ -15,7 +16,7 @@ public class Cleaner {
 
     static final Logger log = Utils.getLogger();
 
-    public boolean clean(BuildContext buildContext, PluginConfig pluginConfig) throws IOException {
+    public Object clean(BuildContext buildContext, PluginConfig pluginConfig) throws IOException {
         File targetFolder = CompilerUtils.getTargetFolder(buildContext.getProjectFolder());
         log.info("Clean project [" + buildContext.getProjectFolder().getAbsolutePath() + "]");
         if (targetFolder.exists()) {
@@ -25,7 +26,7 @@ public class Cleaner {
                 FileUtils.cleanDirectory(targetFolder);
             } catch (Exception ex) {
                 log.error("Error while cleaning target folder [" + targetFolder + "]. ", ex);
-                return false;
+                return AbstractPlugin.ERROR_RESULT;
             }
 
             try {
@@ -40,6 +41,6 @@ public class Cleaner {
         }
 
         log.debug("Cleared target folder");
-        return true;
+        return AbstractPlugin.DONE_RESULT;
     }
 }

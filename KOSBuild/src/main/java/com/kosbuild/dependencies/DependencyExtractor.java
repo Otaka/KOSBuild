@@ -12,7 +12,6 @@ import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.jsonparser.JsonObject;
 import com.kosbuild.jsonparser.JsonParseException;
 import com.kosbuild.jsonparser.JsonParser;
-import com.kosbuild.plugins.AbstractPlugin;
 import com.kosbuild.plugins.PluginConfig;
 import com.kosbuild.plugins.PluginManager;
 import java.io.File;
@@ -47,7 +46,8 @@ public class DependencyExtractor {
 
     private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyy-MM-dd HH:mm:ss");
 
-    public void collectPlugins(JsonObject jsonObject, BuildContext buildContext) throws IOException {
+    public void collectPlugins(BuildContext buildContext) throws IOException {
+        JsonObject jsonObject=buildContext.getParsedBuildFile();
         if (!jsonObject.contains("build")) {
             throw new IllegalArgumentException("Build file [" + buildContext.getBuildFile().getAbsolutePath() + " does not contain [build] section");
         }
@@ -55,11 +55,9 @@ public class DependencyExtractor {
         JsonObject buildSection = jsonObject.getElementByName("build").getAsObject();
         for (FieldValuePair fvp : buildSection.getElements()) {
             JsonObject pluginJsonObject = fvp.getValue().getAsObject();
-            String nameAndVersionString = pluginJsonObject.getElementByName("applyPlugin", true).getAsString();
-            if (!nameAndVersionString.contains(":")) {
-                throw new IllegalArgumentException("Plugin name [" + nameAndVersionString + "] is in wrong format. Proper format \"NAME:VERSION\"");
-            }
 
+            String nameAndVersionString = pluginJsonObject.getElementByName("applyPlugin", true).getAsString();
+            PluginConfig pluginConfig = PluginManager.get().loadPluginConfig(nameAndVersionString);
             JsonObject pluginConfigJson;
             if (pluginJsonObject.contains("configure")) {
                 pluginConfigJson = pluginJsonObject.getElementByName("configure").getAsObject();
@@ -67,24 +65,10 @@ public class DependencyExtractor {
                 pluginConfigJson = new JsonObject();
             }
 
-            String name = nameAndVersionString.substring(0, nameAndVersionString.indexOf(':'));
-            String version = nameAndVersionString.substring(nameAndVersionString.indexOf(':') + 1);
-            PluginConfig pluginConfig = new PluginConfig();
-            pluginConfig.setName(name);
-            pluginConfig.setVersion(version);
             pluginConfig.setOverrideRunOnSteps(parseOverrideStepJson(pluginJsonObject));
-            File folderWithPlugin = getPathToPluginDependencyAndLoadIfNotExists(new Dependency().setName(name).setVersion(version));
-            pluginConfig.setPluginLocalRepositoryFolder(folderWithPlugin);
-            AbstractPlugin pluginObject = loadPlugin(folderWithPlugin);
-            pluginConfig.setDynamicPluginObject(pluginObject);
             pluginConfig.setConfig(pluginConfigJson);
-            pluginObject.init();
             buildContext.addPlugin(pluginConfig);
         }
-    }
-
-    private AbstractPlugin loadPlugin(File pluginLocalRepositoryFolder) throws IOException {
-        return PluginManager.get().loadPlugin(pluginLocalRepositoryFolder);
     }
 
     private String[] parseOverrideStepJson(JsonObject pluginJsonObject) {
@@ -125,7 +109,8 @@ public class DependencyExtractor {
         throw new IllegalArgumentException("[runOnStep] property contains wrong step [" + stepString + "]");
     }
 
-    public void collectDependencies(JsonObject jsonObject, BuildContext buildContext, CrossModuleProperties crossModuleProperties) {
+    public void collectDependencies(BuildContext buildContext, CrossModuleProperties crossModuleProperties) {
+        JsonObject jsonObject=buildContext.getParsedBuildFile();
         if (jsonObject.contains("dependencies")) {
             if (!jsonObject.getElementByName("dependencies").isArray()) {
                 throw new IllegalArgumentException("[dependencies] section should be array of objects, but found [" + jsonObject.getElementByName("dependencies").getClass().getName() + "]");

@@ -1,5 +1,7 @@
 package com.kosbuild.plugins;
 
+import com.kosbuild.dependencies.Dependency;
+import com.kosbuild.dependencies.DependencyExtractor;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -12,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.io.FilenameUtils;
 
 /**
@@ -23,12 +23,37 @@ public class PluginManager {
 
     private static PluginManager instance = new PluginManager();
     private Map<File, Class> pathToPluginClassMap = new HashMap<>();
+    private Map<String, PluginConfig> pluginNameToPluginConfigMap = new HashMap<>();
 
     private PluginManager() {
     }
 
     public static PluginManager get() {
         return instance;
+    }
+
+    public PluginConfig loadPluginConfig(String pluginNameVersion) throws IOException {
+        if (pluginNameToPluginConfigMap.containsKey(pluginNameVersion)) {
+            return pluginNameToPluginConfigMap.get(pluginNameVersion);
+        }
+
+        if (!pluginNameVersion.contains(":")) {
+            throw new IllegalArgumentException("Plugin name [" + pluginNameVersion + "] is in wrong format. Proper format \"NAME:VERSION\"");
+        }
+
+        String name = pluginNameVersion.substring(0, pluginNameVersion.indexOf(':'));
+        String version = pluginNameVersion.substring(pluginNameVersion.indexOf(':') + 1);
+        PluginConfig pluginConfig = new PluginConfig();
+        pluginConfig.setName(name);
+        pluginConfig.setVersion(version);
+        File folderWithPlugin = new DependencyExtractor().getPathToPluginDependencyAndLoadIfNotExists(new Dependency().setName(name).setVersion(version));
+        pluginConfig.setPluginLocalRepositoryFolder(folderWithPlugin);
+        AbstractPlugin pluginObject = loadPlugin(folderWithPlugin);
+        pluginConfig.setDynamicPluginObject(pluginObject);
+        pluginConfig.setOverrideRunOnSteps(new String[]{"RUN_FROM_CODE"});
+        pluginNameToPluginConfigMap.put(pluginNameVersion, pluginConfig);
+        pluginObject.init();
+        return pluginConfig;
     }
 
     public AbstractPlugin loadPlugin(File localRepositoryFolder) throws IOException {
@@ -43,8 +68,8 @@ public class PluginManager {
 
         File jarFile = searchPluginJarFile(localRepositoryFolder);
         String pluginMainClassPath = searchMainPluginClassInJar(jarFile);
-        if(pluginMainClassPath==null){
-            throw new IllegalStateException("Plugin ["+localRepositoryFolder.getAbsolutePath()+"] does not have class PluginMain in jar file ["+jarFile.getAbsolutePath()+"]");
+        if (pluginMainClassPath == null) {
+            throw new IllegalStateException("Plugin [" + localRepositoryFolder.getAbsolutePath() + "] does not have class PluginMain in jar file [" + jarFile.getAbsolutePath() + "]");
         }
         try {
             ClassLoader loader = URLClassLoader.newInstance(
@@ -53,9 +78,9 @@ public class PluginManager {
             );
 
             Class<?> clazz = Class.forName(pluginMainClassPath, true, loader);
-            Object pluginInstance=clazz.newInstance();
-            if(!(pluginInstance instanceof AbstractPlugin)){
-                throw new IllegalStateException("Plugin ["+jarFile.getAbsolutePath()+"] has main class ["+pluginMainClassPath+"] but this class not extends ["+AbstractPlugin.class.getName()+"]");
+            Object pluginInstance = clazz.newInstance();
+            if (!(pluginInstance instanceof AbstractPlugin)) {
+                throw new IllegalStateException("Plugin [" + jarFile.getAbsolutePath() + "] has main class [" + pluginMainClassPath + "] but this class not extends [" + AbstractPlugin.class.getName() + "]");
             }
 
             pathToPluginClassMap.put(localRepositoryFolder, clazz);
@@ -63,9 +88,9 @@ public class PluginManager {
         } catch (MalformedURLException ex) {
             throw new RuntimeException(ex);
         } catch (ClassNotFoundException ex) {
-            throw new IllegalStateException("Cannot load class ["+pluginMainClassPath+"] from the plugin jar file ["+jarFile.getAbsolutePath()+"]",ex);
-        }catch(Exception ex){
-            throw new IllegalStateException("Cannot instantiate class ["+pluginMainClassPath+"] from the plugin jar file ["+jarFile.getAbsolutePath()+"]",ex);
+            throw new IllegalStateException("Cannot load class [" + pluginMainClassPath + "] from the plugin jar file [" + jarFile.getAbsolutePath() + "]", ex);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Cannot instantiate class [" + pluginMainClassPath + "] from the plugin jar file [" + jarFile.getAbsolutePath() + "]", ex);
         }
     }
 

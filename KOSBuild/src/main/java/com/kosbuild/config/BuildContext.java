@@ -1,6 +1,7 @@
 package com.kosbuild.config;
 
 import com.kosbuild.dependencies.Dependency;
+import com.kosbuild.jsonparser.JsonObject;
 import com.kosbuild.plugins.PluginConfig;
 import java.io.File;
 import java.util.ArrayList;
@@ -22,6 +23,15 @@ public class BuildContext {
     private Set<Dependency> dependencies = new HashSet<>();
     private List<PluginConfig> plugins = new ArrayList<>();
     private Map<String, String> customSettings = new HashMap<>();
+    private JsonObject parsedBuildFile;
+
+    public JsonObject getParsedBuildFile() {
+        return parsedBuildFile;
+    }
+
+    public void setParsedBuildFile(JsonObject parsedBuildFile) {
+        this.parsedBuildFile = parsedBuildFile;
+    }
 
     public void setVersion(String version) {
         this.version = version;
