@@ -1,9 +1,11 @@
 package com.kosbuild.utils;
 
 import ch.qos.logback.classic.Level;
+import com.google.gson.Gson;
 import com.kosbuild.jsonparser.JsonArray;
 import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.jsonparser.JsonObject;
+import com.kosbuild.jsonparser.JsonParser;
 import java.io.File;
 import java.net.URISyntaxException;
 import org.apache.commons.lang.StringUtils;
@@ -97,5 +99,9 @@ public class Utils {
         }
         ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) logger;
         rootLogger.setLevel(Level.toLevel(level));
+    }
+    
+    public static JsonObject toJsonObject(Object obj){
+        return new JsonParser().parse(new Gson().toJson(obj)).getAsObject();
     }
 }

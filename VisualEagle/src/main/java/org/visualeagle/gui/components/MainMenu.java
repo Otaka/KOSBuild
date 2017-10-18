@@ -1,17 +1,16 @@
 package org.visualeagle.gui.components;
 
-import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
+import org.apache.commons.lang3.StringUtils;
 import org.visualeagle.gui.ActionManager;
-import org.visualeagle.gui.MainWindow;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
+import org.visualeagle.utils.Settings;
 
 /**
  * @author Dmitry
@@ -39,7 +38,7 @@ public class MainMenu {
         fileMenu.add(createJMenuItem("New Project...", "new_project", "ctrl shift N", "newProject"));
         fileMenu.add(createJMenuItem("Open Project...", "open_project", "ctrl shift O", "openProject"));
         fileMenu.add(createJMenuItem("Close Project", "close_project", null));
-
+        fileMenu.add(createRecentProjectsSubmenuItem());
         fileMenu.addSeparator();
         fileMenu.add(createJMenuItem("Save", "save_file", "ctrl S", "save"));
         fileMenu.add(createJMenuItem("Save As...", "save_file_as", null, "save_as"));
@@ -48,6 +47,33 @@ public class MainMenu {
 
         fileMenu.add(createJMenuItem("Exit", "exit", null));
         return fileMenu;
+    }
+
+    private JMenu createRecentProjectsSubmenuItem() {
+        JMenu recentItemMenu = new JMenu("Recent Projects...");
+        String recentProjectString = Settings.getStringProperty("recentProjectsString", null);
+        if (recentProjectString == null) {
+            recentItemMenu.setEnabled(false);
+        }else{
+            String[]values=StringUtils.split(recentProjectString, '|');
+            for(String path:values){
+                
+                String menuCaption=StringUtils.abbreviateMiddle(path, "...", 100);
+                JMenuItem recentItem=new JMenuItem(menuCaption);
+                recentItem.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        System.out.println("Action [" + path + "]");
+                        ActionEvent actionEvent=new ActionEvent(e, 0, path);
+                        actionManager.fire("open_recent_project",actionEvent);
+                    }
+                });
+
+                recentItemMenu.add(recentItem);
+            }
+        }
+
+        return recentItemMenu;
     }
 
     private JMenu createEditMenu() {

@@ -1,6 +1,6 @@
 package com.kosbuild;
 
-import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.kosbuild.utils.Utils;
 import com.kosbuild.config.BuildArguments;
 import com.kosbuild.config.BuildContext;
@@ -63,12 +63,12 @@ public class KOSBuild {
 
     public void runPlugin(BuildArguments buildArguments) throws Exception {
         for (File buildFile : buildArguments.getBuildFiles()) {
-            PluginResults result= runPlugin(buildFile, buildArguments.getRunPluginCommandLine());
-            System.out.println("--Start Plugin result for ["+buildFile.getAbsolutePath()+"]");
-            String value=new Gson().toJson(result);
+            PluginResults result = runPlugin(buildFile, buildArguments.getRunPluginCommandLine());
+            System.out.println("--Start Plugin result for [" + buildFile.getAbsolutePath() + "]");
+            String value = new GsonBuilder().setPrettyPrinting().create().toJson(result);
             System.out.println(value);
-            System.out.println("--End Plugin result for ["+buildFile.getAbsolutePath()+"]");
-        }        
+            System.out.println("--End Plugin result for [" + buildFile.getAbsolutePath() + "]");
+        }
     }
 
     private void configureLogger(BuildArguments buildArguments) {
@@ -84,7 +84,7 @@ public class KOSBuild {
 
     public PluginResults runPlugin(File buildFile, RunPluginCommandLine runPluginCommandLine) throws IOException, Exception {
         List<PluginResult> pluginResult = new ArrayList<>();
-        BuildContext buildContext = readBuildFile(buildFile,new CrossModuleProperties());
+        BuildContext buildContext = readBuildFile(buildFile, new CrossModuleProperties());
         PluginConfig pluginConfig = PluginManager.get().loadPluginConfig(runPluginCommandLine.getPluginNameVersion());
         if (runPluginCommandLine.getRunOnThisSteps() == null) {
             Object result = pluginConfig.call(buildContext);
@@ -114,6 +114,7 @@ public class KOSBuild {
         if (version == null) {
             throw new IllegalArgumentException("Mandatory [version] property is not found in [" + buildFile.getAbsolutePath() + "] build file");
         }
+        buildContext.setParsedBuildFile(parsedFile);
         buildContext.setApplicationName(projectName);
         buildContext.setVersion(version);
         DependencyExtractor dependencyManager = new DependencyExtractor();

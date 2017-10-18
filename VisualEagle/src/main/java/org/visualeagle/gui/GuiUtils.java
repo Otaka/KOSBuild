@@ -1,5 +1,7 @@
 package org.visualeagle.gui;
 
+import java.awt.Component;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import org.apache.commons.lang3.StringUtils;
 
@@ -27,5 +29,13 @@ public class GuiUtils {
         } else {
             return Integer.parseInt(value);
         }
+    }
+
+    public static void error(String message) {
+        error(null, message);
+    }
+
+    public static void error(Component parent, String message) {
+        JOptionPane.showMessageDialog(parent, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 }

@@ -39,7 +39,7 @@ public class PluginMain extends AbstractPlugin {
             File dependencyFolder = dependencyExtractor.getPathToPackageDependencyAndLoadIfNotExists(dependency);
             processIncludeFolder(projectInfo.getIncludePaths(), buildContext, dependency, dependencyFolder);
             File libsFolder = new File(dependencyFolder.getAbsoluteFile(), "libs");
-            projectInfo.getLibraryPaths().add(libsFolder);
+            projectInfo.getLibraryPaths().add(libsFolder.getAbsolutePath());
             for (File file : libsFolder.listFiles()) {
                 String fileName = file.getName();
                 if (fileName.toLowerCase().endsWith(".a")) {
@@ -55,12 +55,12 @@ public class PluginMain extends AbstractPlugin {
         return projectInfo;
     }
 
-    private void processIncludeFolder(List<File> includePaths, BuildContext buildContext, Dependency dependency, File dependencyFolder) throws IOException {
+    private void processIncludeFolder(List<String> includePaths, BuildContext buildContext, Dependency dependency, File dependencyFolder) throws IOException {
         File includePath = new File(dependencyFolder.getAbsoluteFile(), "include");
 
         File linkFile = new File(includePath, "includeFolder.lnk");
         if (!linkFile.exists()) {
-            includePaths.add(includePath);
+            includePaths.add(includePath.getAbsolutePath());
         } else {
             Properties properties = new Properties();
             try (FileInputStream stream = new FileInputStream(linkFile)) {
@@ -84,7 +84,7 @@ public class PluginMain extends AbstractPlugin {
                 }
             }
 
-            includePaths.add(newIncludePath);
+            includePaths.add(newIncludePath.getAbsolutePath());
         }
     }
 

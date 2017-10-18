@@ -11,11 +11,13 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
-import javax.swing.JInternalFrame;
 import javax.swing.SwingUtilities;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
+import org.visualeagle.utils.Settings;
 import org.visualeagle.utils.WindowLocationService;
 
 /**
@@ -61,7 +63,7 @@ public class MainWindow extends JFrame {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                createProjectNaviagionWindow();
+                createProjectNavigationWindow();
                 createComponentEditorWindow();
                 createEditorWindow();
             }
@@ -72,6 +74,7 @@ public class MainWindow extends JFrame {
         setJMenuBar(mainMenu.constructMainMenu());
         Lookup.get().put(MainWindow.class, this);
         Lookup.get().get(ActionManager.class).registerAction("open_project", this::openProject);
+        Lookup.get().get(ActionManager.class).registerAction("open_recent_project", this::openRecentProject);
     }
 
     private void openProject(ActionEvent actionEvent) {
@@ -80,10 +83,76 @@ public class MainWindow extends JFrame {
             System.out.println("Open project = " + file.getAbsolutePath());
         } else {
             System.out.println("No project directory was selected");
+            return;
         }
+
+        String projectFolder = file.getAbsolutePath();
+        addToRecentList(projectFolder);
     }
 
-    private void createProjectNaviagionWindow() {
+    private void openRecentProject(ActionEvent actionEvent) {
+        String projectFolderString = actionEvent.getActionCommand();
+        File buildFile = new File(projectFolderString, "kosbuild.json");
+        if (!buildFile.exists()) {
+            GuiUtils.error("Cannot find project at [" + buildFile.getAbsolutePath() + "]");
+            removeFromRecentList(projectFolderString);
+            return;
+        }
+        addToRecentList(projectFolderString);
+        System.out.println("Opened project [" + projectFolderString + "]");
+    }
+
+    private void addToRecentList(String path) {
+        String recentProjectString = Settings.getStringProperty("recentProjectsString", null);
+        String[] recentProjects = StringUtils.split(recentProjectString, '|');
+        if(ArrayUtils.indexOf(recentProjects, path)>=0){
+            int index=ArrayUtils.indexOf(recentProjects, path);
+            //move the project to start
+            String tempObj=recentProjects[0];
+            recentProjects[0]=recentProjects[index];
+            recentProjects[index]=tempObj;
+        }else{
+            recentProjects=ArrayUtils.add(recentProjects, 0, path);
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (String project : recentProjects) {
+            if (!first) {
+                sb.append("|");
+            }
+            sb.append(project);
+            first = false;
+        }
+
+        Settings.putStringProperty("recentProjectsString", sb.toString());
+        Settings.flush();
+    }
+
+    private void removeFromRecentList(String path) {
+        String recentProjectString = Settings.getStringProperty("recentProjectsString", null);
+        String[] recentProjects = StringUtils.split(recentProjectString, '|');
+        int index = ArrayUtils.indexOf(recentProjects, path);
+        if (index == -1) {
+            return;
+        }
+
+        recentProjects = ArrayUtils.remove(recentProjects, index);
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (String project : recentProjects) {
+            if (!first) {
+                sb.append("|");
+            }
+            sb.append(project);
+            first = false;
+        }
+
+        Settings.putStringProperty("recentProjectsString", sb.toString());
+        Settings.flush();
+    }
+
+    private void createProjectNavigationWindow() {
         projectNavigationWindow = new ProjectNavigationWindow("Projects Navigation", true, false, false, false);
         projectNavigationWindow.getRootPane().putClientProperty("name", "ProjectNavigations");
         projectNavigationWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));

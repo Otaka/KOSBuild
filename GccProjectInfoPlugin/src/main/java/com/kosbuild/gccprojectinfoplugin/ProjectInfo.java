@@ -9,11 +9,11 @@ import java.util.List;
  */
 public class ProjectInfo {
 
-    private List<File> includePaths = new ArrayList<File>();
-    private List<File> libraryPaths = new ArrayList<File>();
+    private List<String> includePaths = new ArrayList<>();
+    private List<String> libraryPaths = new ArrayList<>();
     private List<String> librariesNames = new ArrayList<>();
 
-    public List<File> getIncludePaths() {
+    public List<String> getIncludePaths() {
         return includePaths;
     }
 
@@ -21,7 +21,7 @@ public class ProjectInfo {
         return librariesNames;
     }
 
-    public List<File> getLibraryPaths() {
+    public List<String> getLibraryPaths() {
         return libraryPaths;
     }
     

@@ -2,8 +2,6 @@ package com.kosbuild.compiler;
 
 import com.kosbuild.utils.Utils;
 import com.kosbuild.config.BuildContext;
-import com.kosbuild.dependencies.Dependency;
-import com.kosbuild.dependencies.DependencyExtractor;
 import com.kosbuild.jsonparser.JsonObject;
 import com.kosbuild.plugins.PluginConfig;
 import java.io.File;
@@ -15,11 +13,12 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import static com.kosbuild.compiler.CompilerUtils.fixPath;
+import com.kosbuild.jsonparser.JsonArray;
+import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.plugins.AbstractPlugin;
-import java.io.FileInputStream;
+import com.kosbuild.plugins.PluginManager;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
-import java.util.Properties;
 import org.slf4j.Logger;
 
 /**
@@ -29,7 +28,7 @@ public class Compiler {
 
     static final Logger log = Utils.getLogger();
 
-    public Object build(BuildContext buildContext, PluginConfig pluginConfig) throws IOException {
+    public Object build(BuildContext buildContext, PluginConfig pluginConfig) throws IOException, Exception {
         log.info("Build project [" + buildContext.getProjectFolder().getAbsolutePath() + "]");
         File targetFolder = CompilerUtils.getTargetFolder(buildContext.getProjectFolder());
         if (!targetFolder.exists()) {
@@ -37,7 +36,7 @@ public class Compiler {
         }
 
         boolean generateDebugInfo = Utils.getBooleanProperty("generateDebugInfo", pluginConfig.getConfig(), Boolean.FALSE);
-        boolean hasConsole=Utils.getBooleanProperty("hasConsole", pluginConfig.getConfig(), Boolean.FALSE);
+        boolean hasConsole = Utils.getBooleanProperty("hasConsole", pluginConfig.getConfig(), Boolean.FALSE);
         boolean doObjCopy = Utils.getBooleanProperty("doobjcopy", pluginConfig.getConfig(), Boolean.TRUE);
         boolean stopOnFirstError = Utils.getBooleanProperty("stopOnFirstErrorFile", pluginConfig.getConfig(), Boolean.TRUE);
         String[] sourceFilesExtensions = Utils.getStringArrayProperty("sourceFileExtensions", pluginConfig.getConfig(), new String[]{"cpp", "c"});
@@ -62,7 +61,7 @@ public class Compiler {
                     return AbstractPlugin.ERROR_RESULT;
                 }
             }
-            if(!hasConsole){
+            if (!hasConsole) {
                 changeSubsystemFlag(buildContext, pluginConfig);
             }
         } else if (resultBinaryType == BinaryType.STATIC_LIBRARY) {
@@ -74,28 +73,42 @@ public class Compiler {
 
         return AbstractPlugin.DONE_RESULT;
     }
-    
-    private void changeSubsystemFlag(BuildContext buildContext, PluginConfig pluginConfig) throws FileNotFoundException, IOException{
-        String applicationName=buildContext.getApplicationName();
-        File outputFile=new File(CompilerUtils.getTargetFolder(buildContext.getProjectFolder()),applicationName);
-        if(!outputFile.exists()){
-            throw new IllegalStateException("Output file "+outputFile.getAbsolutePath()+" does not exist. Exit");
+
+    private void changeSubsystemFlag(BuildContext buildContext, PluginConfig pluginConfig) throws FileNotFoundException, IOException {
+        String applicationName = buildContext.getApplicationName();
+        File outputFile = new File(CompilerUtils.getTargetFolder(buildContext.getProjectFolder()), applicationName);
+        if (!outputFile.exists()) {
+            throw new IllegalStateException("Output file " + outputFile.getAbsolutePath() + " does not exist. Exit");
         }
-        
-        RandomAccessFile raf=new RandomAccessFile(outputFile, "rw");
+
+        RandomAccessFile raf = new RandomAccessFile(outputFile, "rw");
         raf.seek(36);
         raf.write(2);
         raf.close();
     }
 
-    private boolean compile(BuildContext buildContext, PluginConfig pluginConfig, String[] sourceFilesExtensions, List<String> librariesPaths, List<String> librariesNames, List<File> processedObjectFiles, Set<String> seenFileNames, boolean stopOnFirstError, boolean generateDebugInfo) throws IOException {
+    private boolean compile(BuildContext buildContext, PluginConfig pluginConfig, String[] sourceFilesExtensions, List<String> librariesPaths, List<String> librariesNames, List<File> processedObjectFiles, Set<String> seenFileNames, boolean stopOnFirstError, boolean generateDebugInfo) throws IOException, Exception {
         File targetFolder = CompilerUtils.getTargetFolder(buildContext.getProjectFolder());
         List<String> sharedArguments = createSharedCompilerArgumentsList(buildContext, pluginConfig, generateDebugInfo);
         List<File> sourceFiles = listSourceFiles(buildContext, sourceFilesExtensions);
         log.info("Compiling " + sourceFiles.size() + " source files");
         List<String> includePaths = new ArrayList<>();
-        collectIncludeAndLibraryPaths(includePaths, librariesPaths, librariesNames, buildContext);
-        addIncludePaths(sharedArguments, includePaths);
+        PluginConfig gccProjectInfoPluginConfig = PluginManager.get().loadPluginConfig("gccProjectInfo:0.1");
+        JsonObject projectInfo = Utils.toJsonObject(gccProjectInfoPluginConfig.call(buildContext));
+        JsonArray includePathsJson = projectInfo.getElementByName("includePaths").getAsArray();
+        JsonArray libraryPathsJson = projectInfo.getElementByName("libraryPaths").getAsArray();
+        JsonArray libraryNamesJson = projectInfo.getElementByName("librariesNames").getAsArray();
+        //collectIncludeAndLibraryPaths(includePaths, librariesPaths, librariesNames, buildContext);
+        for (JsonElement includePath : includePathsJson.getElements()) {
+            sharedArguments.add("-I");
+            sharedArguments.add(fixPath(includePath.getAsString()));
+        }
+        for (JsonElement libraryPath : libraryPathsJson.getElements()) {
+            librariesPaths.add(libraryPath.getAsString());
+        }
+        for (JsonElement libraryName : libraryNamesJson.getElements()) {
+            librariesNames.add(libraryName.getAsString());
+        }
 
         boolean compilationError = false;
         for (File sourceFile : sourceFiles) {
@@ -316,7 +329,7 @@ public class Compiler {
         return args;
     }
 
-    private void collectIncludeAndLibraryPaths(List<String> includePaths, List<String> libraryPaths, List<String> librariesNames, BuildContext buildContext) throws IOException {
+    /* private void collectIncludeAndLibraryPaths(List<String> includePaths, List<String> libraryPaths, List<String> librariesNames, BuildContext buildContext) throws IOException {
         DependencyExtractor dependencyExtractor = new DependencyExtractor();
         for (Dependency dependency : buildContext.getDependencies()) {
             File dependencyFolder = dependencyExtractor.getPathToPackageDependencyAndLoadIfNotExists(dependency);
@@ -335,9 +348,9 @@ public class Compiler {
                 }
             }
         }
-    }
+    }*/
 
-    private void processIncludeFolder(List<String> includePaths, BuildContext buildContext, Dependency dependency, File dependencyFolder) throws IOException {
+ /*private void processIncludeFolder(List<String> includePaths, BuildContext buildContext, Dependency dependency, File dependencyFolder) throws IOException {
         String includePath = new File(dependencyFolder.getAbsoluteFile(), "include").getAbsolutePath();
 
         File linkFile = new File(includePath, "includeFolder.lnk");
@@ -368,12 +381,11 @@ public class Compiler {
 
             includePaths.add(newIncludePath.getAbsolutePath());
         }
-    }
+    }*/
 
-    private boolean isRemoveBadDependencies(BuildContext buildContext) {
+ /*  private boolean isRemoveBadDependencies(BuildContext buildContext) {
         return buildContext.getBooleanCustomSetting("removebaddependencies");
-    }
-
+    }*/
     private String getNativeUtilsFolder(PluginConfig pluginConfig) {
         return pluginConfig.getPluginLocalRepositoryFolder().getAbsolutePath() + "/nativeUtils/" + Utils.getOperationSystem() + "/bin/";
     }

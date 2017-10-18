@@ -1,5 +1,6 @@
 package org.visualeagle.gui;
 
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,5 +25,15 @@ public class ActionManager {
         }
 
         listener.actionPerformed(null);
+    }
+
+    public void fire(String actionName, ActionEvent value) {
+        ActionListener listener = actions.get(actionName);
+        if (listener == null) {
+            System.err.println("No actions registered for action [" + actionName + "]");
+            return;
+        }
+
+        listener.actionPerformed(value);
     }
 }
