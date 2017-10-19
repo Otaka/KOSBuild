@@ -13,8 +13,6 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import static com.kosbuild.compiler.CompilerUtils.fixPath;
-import com.kosbuild.jsonparser.JsonArray;
-import com.kosbuild.jsonparser.JsonElement;
 import com.kosbuild.plugins.AbstractPlugin;
 import com.kosbuild.plugins.PluginManager;
 import java.io.FileNotFoundException;
@@ -93,20 +91,34 @@ public class Compiler {
         List<File> sourceFiles = listSourceFiles(buildContext, sourceFilesExtensions);
         log.info("Compiling " + sourceFiles.size() + " source files");
         PluginConfig gccProjectInfoPluginConfig = PluginManager.get().loadPluginConfig("gccProjectInfo:0.1");
-        JsonObject projectInfo = Utils.toJsonObject(gccProjectInfoPluginConfig.call(buildContext));
-        JsonArray includePathsJson = projectInfo.getElementByName("includePaths").getAsArray();
-        JsonArray libraryPathsJson = projectInfo.getElementByName("libraryPaths").getAsArray();
-        JsonArray libraryNamesJson = projectInfo.getElementByName("librariesNames").getAsArray();
-        for (JsonElement includePath : includePathsJson.getElements()) {
+        ProjectInfo projectInfo = Utils.toJsonObject(gccProjectInfoPluginConfig.call(buildContext), ProjectInfo.class);
+
+        sharedArguments.add("-I");
+        sharedArguments.add(fixPath(projectInfo.getIncludePath()));
+
+        for (String includePath : projectInfo.getDependenciesIncludePaths()) {
             sharedArguments.add("-I");
-            sharedArguments.add(fixPath(includePath.getAsString()));
+            sharedArguments.add(fixPath(includePath));
         }
-        for (JsonElement libraryPath : libraryPathsJson.getElements()) {
-            librariesPaths.add(libraryPath.getAsString());
+
+        
+
+        for (String libraryPath : projectInfo.getLibrariesPath()) {
+            librariesPaths.add(libraryPath);
         }
-        for (JsonElement libraryName : libraryNamesJson.getElements()) {
-            librariesNames.add(libraryName.getAsString());
+        
+        for (String libraryPath : projectInfo.getDependenciesLibraryPaths()) {
+            librariesPaths.add(libraryPath);
         }
+        
+        for (String libraryName : projectInfo.getLibrariesNames()) {
+            librariesNames.add(libraryName);
+        }
+
+        for (String libraryName : projectInfo.getDependenciesLibraryNames()) {
+            librariesNames.add(libraryName);
+        }
+        
 
         boolean compilationError = false;
         for (File sourceFile : sourceFiles) {

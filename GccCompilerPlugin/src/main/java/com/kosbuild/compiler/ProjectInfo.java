@@ -1,4 +1,4 @@
-package com.kosbuild.gccprojectinfoplugin;
+package com.kosbuild.compiler;
 
 import java.io.File;
 import java.util.ArrayList;

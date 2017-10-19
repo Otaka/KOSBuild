@@ -37,11 +37,13 @@ public class PluginMain extends AbstractPlugin {
         DependencyExtractor dependencyExtractor = new DependencyExtractor();
         projectInfo.setBuildFile(buildContext.getBuildFile());
         projectInfo.getSourcePaths().add(Utils.concatPaths(buildContext.getProjectFolder().getAbsolutePath(), "src", "sources"));
+        projectInfo.setIncludePath(Utils.concatPaths(buildContext.getProjectFolder().getAbsolutePath(), "src", "headers"));
+        
         for (Dependency dependency : buildContext.getDependencies()) {
             File dependencyFolder = dependencyExtractor.getPathToPackageDependencyAndLoadIfNotExists(dependency);
-            processIncludeFolder(projectInfo.getIncludePaths(), buildContext, dependency, dependencyFolder);
+            processIncludeFolder(projectInfo.getDependenciesIncludePaths(), buildContext, dependency, dependencyFolder);
             File libsFolder = new File(dependencyFolder.getAbsoluteFile(), "libs");
-            projectInfo.getLibraryPaths().add(libsFolder.getAbsolutePath());
+            projectInfo.getDependenciesLibraryPaths().add(libsFolder.getAbsolutePath());
             for (File file : libsFolder.listFiles()) {
                 String fileName = file.getName();
                 if (fileName.toLowerCase().endsWith(".a")) {
@@ -50,7 +52,7 @@ public class PluginMain extends AbstractPlugin {
                         continue;
                     }
 
-                    projectInfo.getLibrariesNames().add(file.getName());
+                    projectInfo.getDependenciesLibraryNames().add(file.getName());
                 }
             }
         }

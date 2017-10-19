@@ -101,8 +101,10 @@ public class Utils {
         rootLogger.setLevel(Level.toLevel(level));
     }
 
-    public static JsonObject toJsonObject(Object obj) {
-        return new JsonParser().parse(new Gson().toJson(obj)).getAsObject();
+    public static <T>T toJsonObject(Object obj, Class<T>clazz) {
+        Gson gson=new Gson();
+        String val=gson.toJson(obj);
+        return gson.fromJson(val, clazz);
     }
 
     public static String concatPaths(String... pathParts) {
