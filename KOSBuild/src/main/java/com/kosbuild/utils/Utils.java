@@ -84,24 +84,52 @@ public class Utils {
             throw new RuntimeException();
         } catch (Exception ex) {
             String[] frames = ExceptionUtils.getStackFrames(ex);
-            String line=frames[2];
-            String className=StringUtils.substringBefore( StringUtils.substringBetween(line, "(", "."), ")");
+            String line = frames[2];
+            String className = StringUtils.substringBefore(StringUtils.substringBetween(line, "(", "."), ")");
             return LoggerFactory.getLogger(className);
         }
     }
-    
+
     public static void changeLogLevel(String level) {
         level = level.toUpperCase();
-        Logger logger=LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-        if(! (logger instanceof ch.qos.logback.classic.Logger)){
-            logger.error("Cannot switch logger level, becase underlying logger expected to be ch.qos.logback.classic.Logger, but it is "+logger.getClass().getName());
+        Logger logger = LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+        if (!(logger instanceof ch.qos.logback.classic.Logger)) {
+            logger.error("Cannot switch logger level, becase underlying logger expected to be ch.qos.logback.classic.Logger, but it is " + logger.getClass().getName());
             return;
         }
         ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) logger;
         rootLogger.setLevel(Level.toLevel(level));
     }
-    
-    public static JsonObject toJsonObject(Object obj){
+
+    public static JsonObject toJsonObject(Object obj) {
         return new JsonParser().parse(new Gson().toJson(obj)).getAsObject();
+    }
+
+    public static String concatPaths(String... pathParts) {
+        StringBuilder sb = new StringBuilder();
+        boolean endsWithSlash = false;
+        for (int i = 0; i < pathParts.length; i++) {
+            String pathPart = pathParts[i];
+            pathPart = pathPart.replace("\\", "/");
+            if (i == 0) {
+                sb.append(pathPart);
+            } else {
+                if (pathPart.startsWith("/")) {
+                    if (endsWithSlash == true) {
+                        pathPart = pathPart.substring(1);
+                    }
+                } else {
+                    if (endsWithSlash == false) {
+                        sb.append("/");
+                    }
+                }
+
+                sb.append(pathPart);
+            }
+
+            endsWithSlash = pathPart.endsWith("/");
+        }
+
+        return sb.toString();
     }
 }

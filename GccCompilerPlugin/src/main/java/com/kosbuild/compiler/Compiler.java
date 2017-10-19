@@ -81,10 +81,10 @@ public class Compiler {
             throw new IllegalStateException("Output file " + outputFile.getAbsolutePath() + " does not exist. Exit");
         }
 
-        RandomAccessFile raf = new RandomAccessFile(outputFile, "rw");
-        raf.seek(36);
-        raf.write(2);
-        raf.close();
+        try (RandomAccessFile raf = new RandomAccessFile(outputFile, "rw")) {
+            raf.seek(36);
+            raf.write(2);
+        }
     }
 
     private boolean compile(BuildContext buildContext, PluginConfig pluginConfig, String[] sourceFilesExtensions, List<String> librariesPaths, List<String> librariesNames, List<File> processedObjectFiles, Set<String> seenFileNames, boolean stopOnFirstError, boolean generateDebugInfo) throws IOException, Exception {
@@ -92,13 +92,11 @@ public class Compiler {
         List<String> sharedArguments = createSharedCompilerArgumentsList(buildContext, pluginConfig, generateDebugInfo);
         List<File> sourceFiles = listSourceFiles(buildContext, sourceFilesExtensions);
         log.info("Compiling " + sourceFiles.size() + " source files");
-        List<String> includePaths = new ArrayList<>();
         PluginConfig gccProjectInfoPluginConfig = PluginManager.get().loadPluginConfig("gccProjectInfo:0.1");
         JsonObject projectInfo = Utils.toJsonObject(gccProjectInfoPluginConfig.call(buildContext));
         JsonArray includePathsJson = projectInfo.getElementByName("includePaths").getAsArray();
         JsonArray libraryPathsJson = projectInfo.getElementByName("libraryPaths").getAsArray();
         JsonArray libraryNamesJson = projectInfo.getElementByName("librariesNames").getAsArray();
-        //collectIncludeAndLibraryPaths(includePaths, librariesPaths, librariesNames, buildContext);
         for (JsonElement includePath : includePathsJson.getElements()) {
             sharedArguments.add("-I");
             sharedArguments.add(fixPath(includePath.getAsString()));
@@ -296,13 +294,6 @@ public class Compiler {
         throw new RuntimeException("Cannot choose new new for object file [" + sourceFile.getAbsolutePath() + "]");
     }
 
-    private void addIncludePaths(List<String> args, List<String> includePaths) {
-        for (String includePath : includePaths) {
-            args.add("-I");
-            args.add(fixPath(includePath));
-        }
-    }
-
     private List<String> createSharedCompilerArgumentsList(BuildContext buildContext, PluginConfig pluginConfig, boolean generateDebugInfo) {
         List<String> args = new ArrayList<>();
         String pathToCompiler = getNativeUtilsFolder(pluginConfig) + "g++";
@@ -329,63 +320,6 @@ public class Compiler {
         return args;
     }
 
-    /* private void collectIncludeAndLibraryPaths(List<String> includePaths, List<String> libraryPaths, List<String> librariesNames, BuildContext buildContext) throws IOException {
-        DependencyExtractor dependencyExtractor = new DependencyExtractor();
-        for (Dependency dependency : buildContext.getDependencies()) {
-            File dependencyFolder = dependencyExtractor.getPathToPackageDependencyAndLoadIfNotExists(dependency);
-            processIncludeFolder(includePaths, buildContext, dependency, dependencyFolder);
-            File libsFolder = new File(dependencyFolder.getAbsoluteFile(), "libs");
-            libraryPaths.add(libsFolder.getAbsolutePath());
-            for (File file : libsFolder.listFiles()) {
-                String fileName = file.getName();
-                if (fileName.toLowerCase().endsWith(".a")) {
-                    if (!fileName.startsWith("lib")) {
-                        log.warn("Library [" + fileName + "] in dependency [" + dependency + "] should start with 'lib'. Skip");
-                        continue;
-                    }
-
-                    librariesNames.add(file.getName());
-                }
-            }
-        }
-    }*/
-
- /*private void processIncludeFolder(List<String> includePaths, BuildContext buildContext, Dependency dependency, File dependencyFolder) throws IOException {
-        String includePath = new File(dependencyFolder.getAbsoluteFile(), "include").getAbsolutePath();
-
-        File linkFile = new File(includePath, "includeFolder.lnk");
-        if (!linkFile.exists()) {
-            includePaths.add(includePath);
-        } else {
-            Properties properties = new Properties();
-            try (FileInputStream stream = new FileInputStream(linkFile)) {
-                properties.load(stream);
-            } catch (IOException ex) {
-                throw new RuntimeException("Cannot parse repository include link file [" + linkFile.getAbsolutePath() + "] as properties file", ex);
-            }
-
-            if (!properties.containsKey("path")) {
-                throw new RuntimeException("Repository include link file [" + linkFile.getAbsolutePath() + "] does not contain [path] property");
-            }
-
-            String path = properties.getProperty("path");
-            File newIncludePath = new File(path);
-            if (!newIncludePath.exists()) {
-                if (isRemoveBadDependencies(buildContext)) {
-                    FileUtils.deleteDirectory(dependencyFolder);
-                    throw new IllegalStateException("Dependency " + dependency.formatPath() + " has include link that points to non existant folder [" + newIncludePath + "]. Removed dependency from local repository\n" + "Please run again to reload it from remote repository, or make 'install' if it is your library");
-                } else {
-                    throw new IllegalStateException("Dependency " + dependency.formatPath() + " has include link that points to non existant folder [" + newIncludePath + "]. Fix the problem with missing folder, or run the application with -Dremovebaddependencies to remove the dependency automatically(on next execution the application will try to load it again from remote repository)");
-                }
-            }
-
-            includePaths.add(newIncludePath.getAbsolutePath());
-        }
-    }*/
-
- /*  private boolean isRemoveBadDependencies(BuildContext buildContext) {
-        return buildContext.getBooleanCustomSetting("removebaddependencies");
-    }*/
     private String getNativeUtilsFolder(PluginConfig pluginConfig) {
         return pluginConfig.getPluginLocalRepositoryFolder().getAbsolutePath() + "/nativeUtils/" + Utils.getOperationSystem() + "/bin/";
     }

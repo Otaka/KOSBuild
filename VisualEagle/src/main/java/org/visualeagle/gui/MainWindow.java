@@ -14,6 +14,7 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.visualeagle.gui.components.RecentItemsProcessor;
 import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
@@ -87,70 +88,23 @@ public class MainWindow extends JFrame {
         }
 
         String projectFolder = file.getAbsolutePath();
-        addToRecentList(projectFolder);
+        Lookup.get().get(RecentItemsProcessor.class).addToRecentList(projectFolder);
     }
 
     private void openRecentProject(ActionEvent actionEvent) {
+        RecentItemsProcessor recentItemsProcessor=Lookup.get().get(RecentItemsProcessor.class);
         String projectFolderString = actionEvent.getActionCommand();
         File buildFile = new File(projectFolderString, "kosbuild.json");
         if (!buildFile.exists()) {
             GuiUtils.error("Cannot find project at [" + buildFile.getAbsolutePath() + "]");
-            removeFromRecentList(projectFolderString);
+            recentItemsProcessor.removeFromRecentList(projectFolderString);
             return;
         }
-        addToRecentList(projectFolderString);
+        recentItemsProcessor.addToRecentList(projectFolderString);
         System.out.println("Opened project [" + projectFolderString + "]");
     }
 
-    private void addToRecentList(String path) {
-        String recentProjectString = Settings.getStringProperty("recentProjectsString", null);
-        String[] recentProjects = StringUtils.split(recentProjectString, '|');
-        if(ArrayUtils.indexOf(recentProjects, path)>=0){
-            int index=ArrayUtils.indexOf(recentProjects, path);
-            //move the project to start
-            String tempObj=recentProjects[0];
-            recentProjects[0]=recentProjects[index];
-            recentProjects[index]=tempObj;
-        }else{
-            recentProjects=ArrayUtils.add(recentProjects, 0, path);
-        }
-        
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String project : recentProjects) {
-            if (!first) {
-                sb.append("|");
-            }
-            sb.append(project);
-            first = false;
-        }
-
-        Settings.putStringProperty("recentProjectsString", sb.toString());
-        Settings.flush();
-    }
-
-    private void removeFromRecentList(String path) {
-        String recentProjectString = Settings.getStringProperty("recentProjectsString", null);
-        String[] recentProjects = StringUtils.split(recentProjectString, '|');
-        int index = ArrayUtils.indexOf(recentProjects, path);
-        if (index == -1) {
-            return;
-        }
-
-        recentProjects = ArrayUtils.remove(recentProjects, index);
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String project : recentProjects) {
-            if (!first) {
-                sb.append("|");
-            }
-            sb.append(project);
-            first = false;
-        }
-
-        Settings.putStringProperty("recentProjectsString", sb.toString());
-        Settings.flush();
-    }
+    
 
     private void createProjectNavigationWindow() {
         projectNavigationWindow = new ProjectNavigationWindow("Projects Navigation", true, false, false, false);

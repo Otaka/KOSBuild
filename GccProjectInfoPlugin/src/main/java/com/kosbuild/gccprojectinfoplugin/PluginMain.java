@@ -35,6 +35,8 @@ public class PluginMain extends AbstractPlugin {
     public Object call(BuildContext buildContext, PluginConfig pluginConfig, String currentStep) throws Exception {
         ProjectInfo projectInfo = new ProjectInfo();
         DependencyExtractor dependencyExtractor = new DependencyExtractor();
+        projectInfo.setBuildFile(buildContext.getBuildFile());
+        projectInfo.getSourcePaths().add(Utils.concatPaths(buildContext.getProjectFolder().getAbsolutePath(), "src", "sources"));
         for (Dependency dependency : buildContext.getDependencies()) {
             File dependencyFolder = dependencyExtractor.getPathToPackageDependencyAndLoadIfNotExists(dependency);
             processIncludeFolder(projectInfo.getIncludePaths(), buildContext, dependency, dependencyFolder);

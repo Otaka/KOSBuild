@@ -91,7 +91,7 @@ public class DirectoryChooser {
         dialog.pack();
         dialog.setTitle(title);
         dialog.setModal(true);
-        dialog.setLocationRelativeTo(null);
+        dialog.setLocationRelativeTo(frame);
         dialog.setVisible(true);
 
         if (userAccepted == false) {
