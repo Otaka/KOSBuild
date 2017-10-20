@@ -86,11 +86,11 @@ public class KOSBuild {
         List<PluginResult> pluginResult = new ArrayList<>();
         BuildContext buildContext = readBuildFile(buildFile, new CrossModuleProperties());
         PluginConfig pluginConfig = PluginManager.get().loadPluginConfig(runPluginCommandLine.getPluginNameVersion());
-        if (runPluginCommandLine.getRunOnThisSteps() == null) {
+        if (runPluginCommandLine.getRunOnSteps() == null) {
             Object result = pluginConfig.call(buildContext);
             pluginResult.add(new PluginResult(runPluginCommandLine.getPluginNameVersion(), result));
         } else {
-            for (String step : runPluginCommandLine.getRunOnThisSteps()) {
+            for (String step : runPluginCommandLine.getRunOnSteps()) {
                 Object result = pluginConfig.call(buildContext, step);
                 pluginResult.add(new PluginResult(runPluginCommandLine.getPluginNameVersion(), result));
             }
@@ -169,7 +169,7 @@ public class KOSBuild {
                 for (int i = 0; i < steps.length; i++) {
                     steps[i] = steps[i].trim();
                 }
-                runPluginCommandLine.setRunOnThisSteps(argsStack);
+                runPluginCommandLine.setRunOnSteps(argsStack);
                 ba.setRunPluginCommandLine(runPluginCommandLine);
             } else if (arg.equalsIgnoreCase("-verbose")) {
                 ba.setLogLevel("DEBUG");
@@ -206,7 +206,7 @@ public class KOSBuild {
     }
 
     private void loadConfig() throws FileNotFoundException {
-        Config.get().load(new File(Utils.getAppFolder(), "../../configuration.json"));
+        Config.get().init(new File(Utils.getAppFolder(), "../../configuration.json"));
     }
 
     private void replacePlaceholders(JsonElement json, Map<String, String> propertiesMap) {

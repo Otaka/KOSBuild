@@ -1,13 +1,14 @@
-package com.kosbuild.gccprojectinfoplugin;
+package org.visualeagle.project.projectloaders;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import org.visualeagle.project.vnodes.AbstractVNode;
 
 /**
  * @author sad
  */
-public class ProjectInfo {
+public class ProjectStructure {
 
     private String projectName;
     private String projectVersion;
@@ -21,16 +22,26 @@ public class ProjectInfo {
     private List<String> sourcePaths = new ArrayList<>();
     private File buildFile;
 
+    private AbstractVNode rootFile;
+
+    public void setRootFile(AbstractVNode rootFile) {
+        this.rootFile = rootFile;
+    }
+
+    public AbstractVNode getRootFile() {
+        return rootFile;
+    }
+
     public String getProjectName() {
         return projectName;
     }
 
-    public String getProjectVersion() {
-        return projectVersion;
-    }
-
     public void setProjectName(String projectName) {
         this.projectName = projectName;
+    }
+
+    public String getProjectVersion() {
+        return projectVersion;
     }
 
     public void setProjectVersion(String projectVersion) {

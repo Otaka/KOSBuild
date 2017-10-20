@@ -1,6 +1,5 @@
 package com.kosbuild.config;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -9,10 +8,10 @@ import java.util.List;
 public class RunPluginCommandLine {
 
     private String pluginNameVersion;
-    private List<String> runOnThisSteps;
+    private List<String> runOnSteps;
 
-    public void setRunOnThisSteps(List<String> runOnThisSteps) {
-        this.runOnThisSteps = runOnThisSteps;
+    public void setRunOnSteps(List<String> runOnSteps) {
+        this.runOnSteps = runOnSteps;
     }
 
     public void setPluginNameVersion(String pluginNameVersion) {
@@ -23,8 +22,8 @@ public class RunPluginCommandLine {
         return pluginNameVersion;
     }
 
-    public List<String> getRunOnThisSteps() {
-        return runOnThisSteps;
+    public List<String> getRunOnSteps() {
+        return runOnSteps;
     }
 
 }

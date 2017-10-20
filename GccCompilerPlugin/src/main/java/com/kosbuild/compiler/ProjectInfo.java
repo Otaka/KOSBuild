@@ -9,6 +9,8 @@ import java.util.List;
  */
 public class ProjectInfo {
 
+    private String projectName;
+    private String projectVersion;
     private String includePath;
     private List<String> librariesPath = new ArrayList<>();
     private List<String> librariesNames = new ArrayList<>();
@@ -18,6 +20,22 @@ public class ProjectInfo {
     private List<String> dependenciesLibraryNames = new ArrayList<>();
     private List<String> sourcePaths = new ArrayList<>();
     private File buildFile;
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
+    public String getProjectVersion() {
+        return projectVersion;
+    }
+
+    public void setProjectVersion(String projectVersion) {
+        this.projectVersion = projectVersion;
+    }
 
     public String getIncludePath() {
         return includePath;

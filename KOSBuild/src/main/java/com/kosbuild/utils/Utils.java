@@ -101,7 +101,12 @@ public class Utils {
         rootLogger.setLevel(Level.toLevel(level));
     }
 
-    public static <T>T toJsonObject(Object obj, Class<T>clazz) {
+    /**
+    It is 'hack' method that will convert Object to json and then rebuild it as object instanceof 'class'</br>
+    Why we need this? Plugins may return the data in some object, but you do not have this object in your class path.
+    Even if you have object with the same structure, they will be not compatible
+    */
+    public static <T>T reconvertWithJson(Object obj, Class<T>clazz) {
         Gson gson=new Gson();
         String val=gson.toJson(obj);
         return gson.fromJson(val, clazz);

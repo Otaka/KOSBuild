@@ -16,13 +16,18 @@ import org.slf4j.Logger;
  * @author Dmitry
  */
 public class Config {
+
     static final Logger log = Utils.getLogger();
-    private static Config instance = new Config();
+    private static Config instance;
 
     private Repository localRepository;
     private List<Repository> remoteRepositories = new ArrayList<>();
 
     public static Config get() {
+        if (instance == null) {
+            throw new IllegalStateException("You have not run Config.init(configuration.json) in KOSBuild");
+        }
+
         return instance;
     }
 
@@ -34,7 +39,10 @@ public class Config {
         return remoteRepositories;
     }
 
-    public void load(File configFile) throws FileNotFoundException {
+    public static void init(File configFile) throws FileNotFoundException {
+        if (instance != null) {
+            return;
+        }
         if (!configFile.exists()) {
             throw new IllegalStateException("Cannot find configuration file [" + configFile + "]");
         }
@@ -45,7 +53,8 @@ public class Config {
             throw new IllegalArgumentException("Config file [" + configFile.getAbsolutePath() + "] does not contain section [repositories]");
         }
 
-        parseRepositories(element.getElementByName("repositories").getAsObject(), configFile);
+        instance = new Config();
+        instance.parseRepositories(element.getElementByName("repositories").getAsObject(), configFile);
     }
 
     private void parseRepositories(JsonObject repositoryConfig, File configFile) {

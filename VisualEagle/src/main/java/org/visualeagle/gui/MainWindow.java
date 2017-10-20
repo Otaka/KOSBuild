@@ -12,13 +12,13 @@ import java.io.File;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.visualeagle.gui.components.RecentItemsProcessor;
 import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
+import org.visualeagle.project.projectloaders.KosBuildGccProjectLoader;
+import org.visualeagle.project.projectloaders.ProjectLoader;
+import org.visualeagle.project.projectloaders.ProjectStructure;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
-import org.visualeagle.utils.Settings;
 import org.visualeagle.utils.WindowLocationService;
 
 /**
@@ -79,20 +79,21 @@ public class MainWindow extends JFrame {
     }
 
     private void openProject(ActionEvent actionEvent) {
-        File file = new ProjectDirectoryChooser().chooseFolder(Lookup.get().get(MainWindow.class));
-        if (file != null) {
-            System.out.println("Open project = " + file.getAbsolutePath());
+        File projectFolder = new ProjectDirectoryChooser().chooseFolder(Lookup.get().get(MainWindow.class));
+        if (projectFolder != null) {
+            System.out.println("Open project = " + projectFolder.getAbsolutePath());
         } else {
             System.out.println("No project directory was selected");
             return;
         }
 
-        String projectFolder = file.getAbsolutePath();
-        Lookup.get().get(RecentItemsProcessor.class).addToRecentList(projectFolder);
+        String projectFolderPath = projectFolder.getAbsolutePath();
+        Lookup.get().get(RecentItemsProcessor.class).addToRecentList(projectFolderPath);
+        loadProject(projectFolder);
     }
 
     private void openRecentProject(ActionEvent actionEvent) {
-        RecentItemsProcessor recentItemsProcessor=Lookup.get().get(RecentItemsProcessor.class);
+        RecentItemsProcessor recentItemsProcessor = Lookup.get().get(RecentItemsProcessor.class);
         String projectFolderString = actionEvent.getActionCommand();
         File buildFile = new File(projectFolderString, "kosbuild.json");
         if (!buildFile.exists()) {
@@ -102,9 +103,8 @@ public class MainWindow extends JFrame {
         }
         recentItemsProcessor.addToRecentList(projectFolderString);
         System.out.println("Opened project [" + projectFolderString + "]");
+        loadProject(new File(projectFolderString));
     }
-
-    
 
     private void createProjectNavigationWindow() {
         projectNavigationWindow = new ProjectNavigationWindow("Projects Navigation", true, false, false, false);
@@ -137,5 +137,21 @@ public class MainWindow extends JFrame {
         editorWindow.setVisible(true);
         Lookup.get().put(EditorWindow.class, editorWindow);
         desktop.add(editorWindow);
+    }
+
+    public void loadProject(File projectFolder) {
+        File kosBuildFile = new File(projectFolder, "kosbuild.json");
+        ProjectLoader projectLoader;
+        if (kosBuildFile.exists()) {
+            projectLoader = new KosBuildGccProjectLoader();
+        } else {
+            throw new IllegalArgumentException("Project in folder [" + projectFolder + "] has unknown type");
+        }
+        try {
+            ProjectStructure projectStructure = projectLoader.loadProject(projectFolder);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
+        }
     }
 }

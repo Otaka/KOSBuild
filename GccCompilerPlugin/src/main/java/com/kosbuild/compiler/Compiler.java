@@ -91,7 +91,7 @@ public class Compiler {
         List<File> sourceFiles = listSourceFiles(buildContext, sourceFilesExtensions);
         log.info("Compiling " + sourceFiles.size() + " source files");
         PluginConfig gccProjectInfoPluginConfig = PluginManager.get().loadPluginConfig("gccProjectInfo:0.1");
-        ProjectInfo projectInfo = Utils.toJsonObject(gccProjectInfoPluginConfig.call(buildContext), ProjectInfo.class);
+        ProjectInfo projectInfo = Utils.reconvertWithJson(gccProjectInfoPluginConfig.call(buildContext), ProjectInfo.class);
 
         sharedArguments.add("-I");
         sharedArguments.add(fixPath(projectInfo.getIncludePath()));
