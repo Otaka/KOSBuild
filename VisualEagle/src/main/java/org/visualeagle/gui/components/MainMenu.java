@@ -25,7 +25,7 @@ public class MainMenu {
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(createFileMenu());
         menuBar.add(createEditMenu());
-        menuBar.add(createRunMenu());
+        menuBar.add(createProjectMenu());
         menuBar.add(createHelpMenu());
         return menuBar;
     }
@@ -43,7 +43,6 @@ public class MainMenu {
         fileMenu.add(recentItemMenu);
         fileMenu.addSeparator();
         fileMenu.add(createJMenuItem("Save", "save_file", "ctrl S", "save"));
-        fileMenu.add(createJMenuItem("Save As...", "save_file_as", null, "save_as"));
         fileMenu.add(createJMenuItem("Save All", "save_all", null, "save_all"));
         fileMenu.addSeparator();
 
@@ -70,9 +69,14 @@ public class MainMenu {
         return fileMenu;
     }
 
-    private JMenu createRunMenu() {
-        JMenu fileMenu = new JMenu("Run");
-        fileMenu.setMnemonic('R');
+    private JMenu createProjectMenu() {
+        JMenu fileMenu = new JMenu("Project");
+        fileMenu.setMnemonic('P');
+        fileMenu.add(createJMenuItem("Clean", "clean", null, null));
+        fileMenu.add(createJMenuItem("Build", "build", null, null));
+        fileMenu.add(createJMenuItem("Install", "install", null, null));
+        fileMenu.add(createJMenuItem("Clean Install", "clean_install", null, null));
+        fileMenu.addSeparator();
         fileMenu.add(createJMenuItem("Run", "run_app", "F9", "run"));
         fileMenu.add(createJMenuItem("Debug", "debug_app", "ctrl F9", "debug"));
         return fileMenu;

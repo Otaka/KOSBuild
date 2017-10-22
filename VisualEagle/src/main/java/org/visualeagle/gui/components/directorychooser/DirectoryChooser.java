@@ -9,17 +9,14 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import javax.swing.Icon;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
-import javax.swing.SwingUtilities;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
@@ -30,6 +27,7 @@ import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import org.visualeagle.utils.ImageManager;
+import org.visualeagle.utils.Utils;
 
 /**
  * @author Dmitry
@@ -177,7 +175,7 @@ public class DirectoryChooser {
                 if (children == null) {
                     return;
                 }
-                sortFiles(children);
+                Utils.sortFiles(children);
                 for (File f : children) {
                     if (!isShowHidden() && f.isHidden()) {
                         continue;
@@ -222,27 +220,12 @@ public class DirectoryChooser {
                     component.setIcon(treeElement.getIcon());
                 } else if (!treeElement.isShouldHaveChildren()) {
                     component.setIcon(fileIcon);
-                }else{
+                } else {
                     component.setIcon(folderIcon);
                 }
                 component.setText(treeElement.getText());
                 return component;
             }
         };
-    }
-
-    private void sortFiles(File[] files) {
-        Arrays.sort(files, new Comparator<File>() {
-            @Override
-            public int compare(File o1, File o2) {
-                if (o1.isDirectory() == o2.isDirectory()) {
-                    return o1.compareTo(o2);
-                }
-                if (o1.isDirectory()) {
-                    return -1;
-                }
-                return 1;
-            }
-        });
     }
 }

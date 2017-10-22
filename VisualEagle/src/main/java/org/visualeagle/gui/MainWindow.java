@@ -1,24 +1,30 @@
 package org.visualeagle.gui;
 
+import java.awt.BorderLayout;
 import org.visualeagle.gui.components.ProjectNavigationWindow;
 import org.visualeagle.gui.components.MainMenu;
-import org.visualeagle.gui.components.EditorWindow;
+import org.visualeagle.gui.components.editorwindow.EditorWindow;
 import org.visualeagle.gui.components.ComponentEditorWindow;
 import org.visualeagle.utils.ChunkedTextCollector;
 import java.awt.Color;
 import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.visualeagle.gui.components.RecentItemsProcessor;
+import org.visualeagle.gui.components.StatusPanel;
 import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
+import org.visualeagle.gui.components.logwindow.LogWindow;
 import org.visualeagle.project.projectloaders.KosBuildGccProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectStructure;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
+import org.visualeagle.utils.Settings;
 import org.visualeagle.utils.WindowLocationService;
 
 /**
@@ -32,7 +38,9 @@ public class MainWindow extends JFrame {
     private ProjectNavigationWindow projectNavigationWindow;
     private ComponentEditorWindow componentEditorWindow;
     private EditorWindow editorWindow;
+    private LogWindow logWindow;
     private MainMenu mainMenu;
+    private StatusPanel statusPanel;
 
     public MainWindow() throws HeadlessException {
         init();
@@ -59,7 +67,7 @@ public class MainWindow extends JFrame {
         desktop = new JDesktopPane();
         desktop.setBackground(new Color(240, 240, 240));
         desktop.setDragMode(JDesktopPane.LIVE_DRAG_MODE);
-        setContentPane(desktop);
+        getContentPane().add(desktop);
         windowLocationService.setRootComponent(desktop);
         SwingUtilities.invokeLater(new Runnable() {
             @Override
@@ -67,12 +75,22 @@ public class MainWindow extends JFrame {
                 createProjectNavigationWindow();
                 createComponentEditorWindow();
                 createEditorWindow();
+                createLogWindow();
             }
         });
 
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                Settings.clear();
+                System.exit(0);
+            }
+        });
         mainMenu = new MainMenu();
         setJMenuBar(mainMenu.constructMainMenu());
+        statusPanel = new StatusPanel();
+        getContentPane().add(statusPanel, BorderLayout.SOUTH);
         Lookup.get().put(MainWindow.class, this);
         Lookup.get().get(ActionManager.class).registerAction("open_project", this::openProject);
         Lookup.get().get(ActionManager.class).registerAction("open_recent_project", this::openRecentProject);
@@ -121,7 +139,7 @@ public class MainWindow extends JFrame {
         componentEditorWindow = new ComponentEditorWindow("Component Editor", true, false, false, false);
         componentEditorWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));
         componentEditorWindow.getRootPane().putClientProperty("name", "ComponentEditor");
-        windowLocationService.setInitialState(componentEditorWindow, "0%", "50%", "20%", "50%", false);
+        windowLocationService.setInitialState(componentEditorWindow, "0%", "50%", "20%", "47%", false);
         windowLocationService.register(componentEditorWindow);
         componentEditorWindow.setVisible(true);
         Lookup.get().put(ComponentEditorWindow.class, componentEditorWindow);
@@ -132,11 +150,22 @@ public class MainWindow extends JFrame {
         editorWindow = new EditorWindow("Editor", true, false, false, false);
         editorWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));
         editorWindow.getRootPane().putClientProperty("name", "Editor");
-        windowLocationService.setInitialState(editorWindow, "20%", "0%", "80%", "100%", false);
+        windowLocationService.setInitialState(editorWindow, "20%", "0%", "81%", "75%", false);
         windowLocationService.register(editorWindow);
         editorWindow.setVisible(true);
         Lookup.get().put(EditorWindow.class, editorWindow);
         desktop.add(editorWindow);
+    }
+
+    private void createLogWindow() {
+        logWindow = new LogWindow("Log", true, false, false, false);
+        logWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));
+        logWindow.getRootPane().putClientProperty("name", "Editor");
+        windowLocationService.setInitialState(logWindow, "20%", "75%", "81%", "22%", false);
+        windowLocationService.register(logWindow);
+        logWindow.setVisible(true);
+        Lookup.get().put(LogWindow.class, logWindow);
+        desktop.add(logWindow);
     }
 
     public void loadProject(File projectFolder) {
@@ -149,9 +178,16 @@ public class MainWindow extends JFrame {
         }
         try {
             ProjectStructure projectStructure = projectLoader.loadProject(projectFolder);
+            closeOpenedProject();
+            projectNavigationWindow.loadProject(projectStructure);
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RuntimeException(ex);
         }
+    }
+
+    public void closeOpenedProject() {
+        editorWindow.closeAllEditorWindows();
+        projectNavigationWindow.closeCurrentProject();
     }
 }

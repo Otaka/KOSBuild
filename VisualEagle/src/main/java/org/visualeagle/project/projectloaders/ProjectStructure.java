@@ -22,14 +22,14 @@ public class ProjectStructure {
     private List<String> sourcePaths = new ArrayList<>();
     private File buildFile;
 
-    private AbstractVNode rootFile;
+    private AbstractVNode rootProjectVFile;
 
-    public void setRootFile(AbstractVNode rootFile) {
-        this.rootFile = rootFile;
+    public void setRootProjectVFile(AbstractVNode rootProjectVFile) {
+        this.rootProjectVFile = rootProjectVFile;
     }
 
-    public AbstractVNode getRootFile() {
-        return rootFile;
+    public AbstractVNode getRootProjectVFile() {
+        return rootProjectVFile;
     }
 
     public String getProjectName() {

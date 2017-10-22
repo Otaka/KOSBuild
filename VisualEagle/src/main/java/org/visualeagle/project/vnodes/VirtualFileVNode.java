@@ -1,5 +1,6 @@
 package org.visualeagle.project.vnodes;
 
+import java.util.Objects;
 import javax.swing.Icon;
 
 /**
@@ -7,23 +8,45 @@ import javax.swing.Icon;
  */
 public class VirtualFileVNode extends AbstractVNode {
 
-    private Icon icon;
+    private Object userObject;
 
-    public void setIcon(Icon icon) {
-        this.icon = icon;
+    public Object getUserObject() {
+        return userObject;
     }
 
-    @Override
-    public Icon getIcon() {
-        if (icon != null) {
-            return icon;
-        }
-
-        return super.getIcon();
+    public void setUserObject(Object userObject) {
+        this.userObject = userObject;
     }
 
     @Override
     public boolean isLeaf() {
         return true;
     }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 67 * hash + Objects.hashCode(this.userObject);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final VirtualFileVNode other = (VirtualFileVNode) obj;
+        if (!Objects.equals(this.userObject, other.userObject)) {
+            return false;
+        }
+        return true;
+    }
+
+    
 }

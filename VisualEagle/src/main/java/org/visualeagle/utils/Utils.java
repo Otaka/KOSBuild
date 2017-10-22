@@ -1,5 +1,8 @@
 package org.visualeagle.utils;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -57,5 +60,20 @@ public class Utils {
             throw new IllegalArgumentException("Array is empty. Cannot get last element");
         }
         return array[array.length-1];
+    }
+    
+    public static void sortFiles(File[] files) {
+        Arrays.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File o1, File o2) {
+                if (o1.isDirectory() == o2.isDirectory()) {
+                    return o1.compareTo(o2);
+                }
+                if (o1.isDirectory()) {
+                    return -1;
+                }
+                return 1;
+            }
+        });
     }
 }
