@@ -38,7 +38,8 @@ public class PluginMain extends AbstractPlugin {
         projectInfo.setBuildFile(buildContext.getBuildFile());
         projectInfo.getSourcePaths().add(Utils.concatPaths(buildContext.getProjectFolder().getAbsolutePath(), "src", "sources"));
         projectInfo.setIncludePath(Utils.concatPaths(buildContext.getProjectFolder().getAbsolutePath(), "src", "headers"));
-        
+        projectInfo.setProjectName(buildContext.getApplicationName());
+        projectInfo.setProjectVersion(buildContext.getVersion());
         for (Dependency dependency : buildContext.getDependencies()) {
             File dependencyFolder = dependencyExtractor.getPathToPackageDependencyAndLoadIfNotExists(dependency);
             processIncludeFolder(projectInfo.getDependenciesIncludePaths(), buildContext, dependency, dependencyFolder);
