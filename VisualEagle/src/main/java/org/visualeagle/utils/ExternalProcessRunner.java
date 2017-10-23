@@ -13,7 +13,7 @@ public class ExternalProcessRunner {
     private StringBuffer sb = new StringBuffer();
 
     public static ExternalProcessRunner startProgram( String[] args) throws IOException, InterruptedException {
-        Process process = new ProcessBuilder().command(args);
+     /*   Process process = new ProcessBuilder().command(args);
         final InputStream is = ps.process.getInputStream();
         final AtomicBoolean printThreadRunFlag = new AtomicBoolean(true);
         ps.printThreadFlag = printThreadRunFlag;
@@ -29,9 +29,10 @@ public class ExternalProcessRunner {
         });
 
         printThread.start();
-        return ps;
+        return ps;*/
+     return null;
     }
-
+/*
 
     private static void print(InputStream inputStream, AtomicBoolean runFlag, ExternalProcess process) throws IOException {
         BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
@@ -82,5 +83,5 @@ public class ExternalProcessRunner {
 
     public boolean logContains(String s) {
         return getOutput().contains(s);
-    }
+    }*/
 }
