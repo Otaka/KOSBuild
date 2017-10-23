@@ -1,4 +1,4 @@
-package org.visualeagle.gui.components.editorwindow;
+package org.visualeagle.gui.editorwindow;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -7,7 +7,7 @@ import java.awt.event.ActionListener;
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import org.visualeagle.gui.components.IconButton;
+import org.visualeagle.gui.small.IconButton;
 import org.visualeagle.utils.ImageManager;
 
 /**

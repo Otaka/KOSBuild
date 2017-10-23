@@ -1,4 +1,4 @@
-package org.visualeagle.gui.components.logwindow;
+package org.visualeagle.gui.logwindow;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;

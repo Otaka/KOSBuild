@@ -1,8 +1,8 @@
 package org.visualeagle;
 
 import javax.swing.SwingUtilities;
-import org.visualeagle.gui.MainWindow;
-import org.visualeagle.gui.GuiUtils;
+import org.visualeagle.gui.mainwindow.MainWindow;
+import org.visualeagle.utils.GuiUtils;
 
 /**
  * @author Dmitry

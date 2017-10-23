@@ -1,4 +1,4 @@
-package org.visualeagle.gui.components.editorwindow;
+package org.visualeagle.gui.editorwindow;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -9,7 +9,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import org.apache.commons.lang3.StringUtils;
-import org.visualeagle.gui.ActionManager;
+import org.visualeagle.gui.mainwindow.ActionManager;
 import org.visualeagle.project.vnodes.AbstractVNode;
 import org.visualeagle.utils.ChunkedTextCollector;
 import org.visualeagle.utils.Lookup;

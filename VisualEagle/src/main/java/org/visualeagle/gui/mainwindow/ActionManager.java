@@ -1,4 +1,4 @@
-package org.visualeagle.gui;
+package org.visualeagle.gui.mainwindow;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;

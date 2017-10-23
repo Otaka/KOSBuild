@@ -1,4 +1,4 @@
-package org.visualeagle.gui.components;
+package org.visualeagle.gui.projectnavigation;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -6,7 +6,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.visualeagle.gui.ActionManager;
+import org.visualeagle.gui.mainwindow.ActionManager;
 import org.visualeagle.utils.Lookup;
 import org.visualeagle.utils.Settings;
 

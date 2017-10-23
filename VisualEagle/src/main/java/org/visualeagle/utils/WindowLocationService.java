@@ -1,6 +1,5 @@
 package org.visualeagle.utils;
 
-import org.visualeagle.gui.GuiUtils;
 import java.awt.Frame;
 import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;

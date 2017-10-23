@@ -2,7 +2,7 @@ package org.visualeagle.utils;
 
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
-import org.visualeagle.gui.MainWindow;
+import org.visualeagle.gui.mainwindow.MainWindow;
 
 /**
  * @author Dmitry
