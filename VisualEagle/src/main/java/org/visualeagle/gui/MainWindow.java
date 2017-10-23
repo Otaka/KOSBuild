@@ -18,13 +18,13 @@ import javax.swing.SwingUtilities;
 import org.visualeagle.gui.components.RecentItemsProcessor;
 import org.visualeagle.gui.components.StatusPanel;
 import org.visualeagle.gui.components.directorychooser.ProjectDirectoryChooser;
+import org.visualeagle.gui.components.logwindow.GuiLogPrinter;
 import org.visualeagle.gui.components.logwindow.LogWindow;
 import org.visualeagle.project.projectloaders.KosBuildGccProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectStructure;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
-import org.visualeagle.utils.Settings;
 import org.visualeagle.utils.WindowLocationService;
 
 /**
@@ -83,7 +83,7 @@ public class MainWindow extends JFrame {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                Settings.clear();
+                // Settings.clear();
                 System.exit(0);
             }
         });
@@ -158,14 +158,15 @@ public class MainWindow extends JFrame {
     }
 
     private void createLogWindow() {
-        logWindow = new LogWindow("Log", true, false, false, false);
+        logWindow = new LogWindow("Output", true, false, false, false);
         logWindow.setFrameIcon(ImageManager.get().getIcon("eagle"));
-        logWindow.getRootPane().putClientProperty("name", "Editor");
+        logWindow.getRootPane().putClientProperty("name", "logWindow");
         windowLocationService.setInitialState(logWindow, "20%", "75%", "81%", "22%", false);
         windowLocationService.register(logWindow);
         logWindow.setVisible(true);
         Lookup.get().put(LogWindow.class, logWindow);
         desktop.add(logWindow);
+        Lookup.get().put(GuiLogPrinter.class, logWindow);
     }
 
     public void loadProject(File projectFolder) {

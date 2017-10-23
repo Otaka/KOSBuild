@@ -27,7 +27,7 @@ public class TabComponent extends JPanel {
         setOpaque(false);
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
         label = new JLabel();
-        label.setText(title);
+        label.setText(title+"  ");
         add(label);
         close = new IconButton(ImageManager.get().getImage("closeTabIcon"), new Color(200,80,80).brighter(),new Color(220,100,100).brighter());
         close.setPreferredSize(new Dimension(11, 11));

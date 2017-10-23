@@ -20,7 +20,7 @@ public class ActionManager {
     public void fire(String actionName) {
         ActionListener listener = actions.get(actionName);
         if (listener == null) {
-            System.err.println("No actions registered for action [" + actionName + "]");
+            System.out.println("No actions registered for action [" + actionName + "]");
             return;
         }
 
@@ -30,7 +30,7 @@ public class ActionManager {
     public void fire(String actionName, ActionEvent value) {
         ActionListener listener = actions.get(actionName);
         if (listener == null) {
-            System.err.println("No actions registered for action [" + actionName + "]");
+            System.out.println("No actions registered for action [" + actionName + "]");
             return;
         }
 

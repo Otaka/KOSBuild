@@ -1,15 +1,20 @@
 package org.visualeagle.gui.components.editorwindow;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import org.apache.commons.lang3.StringUtils;
 import org.visualeagle.gui.ActionManager;
 import org.visualeagle.project.vnodes.AbstractVNode;
+import org.visualeagle.utils.ChunkedTextCollector;
 import org.visualeagle.utils.Lookup;
 
 /**
@@ -19,7 +24,7 @@ public class EditorWindow extends JInternalFrame {
 
     private JTabbedPane jtabbedPane;
     private EditorFactory editorFactory;
-
+    private ChunkedTextCollector titleTextCollector;
     public EditorWindow(String title, boolean resizable, boolean closable, boolean maximizable, boolean iconifiable) {
         super(title, resizable, closable, maximizable, iconifiable);
         editorFactory = new EditorFactory();
@@ -29,9 +34,24 @@ public class EditorWindow extends JInternalFrame {
 
     private void initGui() {
         setLayout(new BorderLayout(0, 0));
-
         jtabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         add(jtabbedPane);
+        jtabbedPane.setOpaque(true);
+        jtabbedPane.setBackground(new Color(240,240,240));
+        titleTextCollector=new ChunkedTextCollector((String text) -> {
+            setTitle(text);
+        });
+        titleTextCollector.setSeparator("    ");
+        titleTextCollector.setTitles("title","Editor","fileName","");
+        
+        jtabbedPane.addChangeListener((ChangeEvent e) -> {
+            AbstractEditor currentEditor=getCurrentEditor();
+            if(currentEditor!=null){
+                titleTextCollector.setTitle("fileName", currentEditor.getFile().getName());
+            }else{
+                titleTextCollector.setTitle("fileName", "");
+            }
+        });
     }
 
     private void initEvents() {
