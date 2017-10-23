@@ -6,7 +6,6 @@ import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.List;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
@@ -94,17 +93,14 @@ public class ProjectNavigationWindow extends JInternalFrame {
 
     private void sortVNodes(List<AbstractVNode> files) {
 
-        files.sort(new Comparator<AbstractVNode>() {
-            @Override
-            public int compare(AbstractVNode o1, AbstractVNode o2) {
-                if (o1.isLeaf() == o2.isLeaf()) {
-                    return o1.getName().compareToIgnoreCase(o2.getName());
-                }
-                if (!o1.isLeaf()) {
-                    return -1;
-                }
-                return 1;
+        files.sort((AbstractVNode o1, AbstractVNode o2) -> {
+            if (o1.isLeaf() == o2.isLeaf()) {
+                return o1.getName().compareToIgnoreCase(o2.getName());
             }
+            if (!o1.isLeaf()) {
+                return -1;
+            }
+            return 1;
         });
 
     }

@@ -10,12 +10,9 @@ public class ProjectDirectoryChooser extends DirectoryChooser {
 
     public ProjectDirectoryChooser() {
         setOnFileFoundEvent(createOnFileFoundEvent());
-        setCheckAllowToSelectCallback(new CheckAllowToSelectCallback() {
-            @Override
-            public boolean onSelect(TreeElement treeElement) {
-                File folder=treeElement.getFile();
-                return new File(folder,"kosbuild.json").exists();
-            }
+        setCheckAllowToSelectCallback((TreeElement treeElement) -> {
+            File folder=treeElement.getFile();
+            return new File(folder,"kosbuild.json").exists();
         });
     }
 

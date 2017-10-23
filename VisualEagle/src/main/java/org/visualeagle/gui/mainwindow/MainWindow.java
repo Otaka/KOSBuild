@@ -68,14 +68,11 @@ public class MainWindow extends JFrame {
         desktop.setDragMode(JDesktopPane.LIVE_DRAG_MODE);
         getContentPane().add(desktop);
         windowLocationService.setRootComponent(desktop);
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                createProjectNavigationWindow();
-                createComponentEditorWindow();
-                createEditorWindow();
-                createLogWindow();
-            }
+        SwingUtilities.invokeLater(() -> {
+            createProjectNavigationWindow();
+            createComponentEditorWindow();
+            createEditorWindow();
+            createLogWindow();
         });
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);

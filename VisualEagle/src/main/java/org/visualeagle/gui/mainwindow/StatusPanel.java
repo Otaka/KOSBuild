@@ -33,11 +33,8 @@ public class StatusPanel extends JPanel {
         cursorPositionPanel.add(cursorPositionLabel);
         add(new SeparatorPanel());
         add(cursorPositionPanel);
-        Lookup.get().addChangeEvent("cursorPosition", new Lookup.LookupEvent<String>() {
-            @Override
-            public void change(String oldValue, String newValue) {
-                cursorPositionLabel.setText(newValue);
-            }
+        Lookup.get().addChangeEvent("cursorPosition", (String oldValue, String newValue) -> {
+            cursorPositionLabel.setText(newValue);
         });
     }
 

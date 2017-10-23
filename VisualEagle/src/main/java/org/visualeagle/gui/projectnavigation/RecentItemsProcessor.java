@@ -1,7 +1,6 @@
 package org.visualeagle.gui.projectnavigation;
 
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import org.apache.commons.lang3.ArrayUtils;
@@ -32,13 +31,10 @@ public class RecentItemsProcessor {
             for (String path : values) {
                 String menuCaption = StringUtils.abbreviateMiddle(path, "...", 100);
                 JMenuItem recentItem = new JMenuItem(menuCaption);
-                recentItem.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        System.out.println("Action [" + path + "]");
-                        ActionEvent actionEvent = new ActionEvent(e, 0, path);
-                        Lookup.get().get(ActionManager.class).fire("open_recent_project", actionEvent);
-                    }
+                recentItem.addActionListener((ActionEvent e) -> {
+                    System.out.println("Action [" + path + "]");
+                    ActionEvent actionEvent = new ActionEvent(e, 0, path);
+                    Lookup.get().get(ActionManager.class).fire("open_recent_project", actionEvent);
                 });
 
                 recentItemMenu.add(recentItem);

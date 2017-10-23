@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.io.IOException;
 import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
@@ -41,18 +40,15 @@ public class CPPEditor extends AbstractEditor {
         textArea.setMarkOccurrences(true);
         textArea.setMarkOccurrencesDelay(500);
         textArea.setPaintTabLines(true);
-        textArea.addCaretListener(new CaretListener() {
-            @Override
-            public void caretUpdate(CaretEvent e) {
-                try {
-                    int position = e.getDot();
-                    int y = textArea.getLineOfOffset(position);
-                    int x = position - textArea.getLineStartOffset(y);
-                    String loc = "" + x + ":" + y;
-                    Lookup.get().put("cursorPosition", loc);
-                } catch (BadLocationException ex) {
-                    ex.printStackTrace();
-                }
+        textArea.addCaretListener((CaretEvent e) -> {
+            try {
+                int position = e.getDot();
+                int y1 = textArea.getLineOfOffset(position);
+                int x1 = position - textArea.getLineStartOffset(y1);
+                String loc = "" + x1 + ":" + y1;
+                Lookup.get().put("cursorPosition", loc);
+            }catch (BadLocationException ex) {
+                ex.printStackTrace();
             }
         });
         textArea.getDocument().addDocumentListener(new DocumentListener() {

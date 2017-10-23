@@ -9,8 +9,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.Arrays;
-import java.util.Comparator;
 import javax.swing.Icon;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -19,7 +17,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.event.TreeWillExpandListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
@@ -104,12 +101,8 @@ public class DirectoryChooser {
     }
 
     private CheckAllowToSelectCallback createDefaultCheckAllowToSelectCallback() {
-        return new CheckAllowToSelectCallback() {//default check that always returns true
-            @Override
-            public boolean onSelect(TreeElement treeElement) {
-                return true;
-            }
-        };
+        return (TreeElement treeElement) -> true //default check that always returns true
+        ;
     }
 
     private JPanel createContentPanel() {
@@ -152,17 +145,14 @@ public class DirectoryChooser {
                 }
             }
         });
-        fileTree.addTreeSelectionListener(new TreeSelectionListener() {
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                TreePath treePath = e.getPath();
-                DefaultMutableTreeNode mutableTreeNode = (DefaultMutableTreeNode) treePath.getLastPathComponent();
-                TreeElement treeElement = (TreeElement) mutableTreeNode.getUserObject();
-                if (checkAllowToSelectCallback.onSelect(treeElement)) {
-                    selectedDir = treeElement.getFile();
-                } else {
-                    selectedDir = null;
-                }
+        fileTree.addTreeSelectionListener((TreeSelectionEvent e) -> {
+            TreePath treePath = e.getPath();
+            DefaultMutableTreeNode mutableTreeNode = (DefaultMutableTreeNode) treePath.getLastPathComponent();
+            TreeElement treeElement = (TreeElement) mutableTreeNode.getUserObject();
+            if (checkAllowToSelectCallback.onSelect(treeElement)) {
+                selectedDir = treeElement.getFile();
+            } else {
+                selectedDir = null;
             }
         });
         fileTree.addTreeWillExpandListener(new TreeWillExpandListener() {

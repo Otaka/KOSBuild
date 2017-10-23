@@ -125,12 +125,8 @@ public class Lookup {
         }
 
         //WeakReference<LookupEvent> ref = new WeakReference<LookupEvent>(event);
-        list.add(new LookupEvent<T>() {
-
-            @Override
-            public void change(T oldValue, T newValue) {
-                event.change(newValue);;
-            }
+        list.add((LookupEvent<T>) (T oldValue, T newValue) -> {
+            event.change(newValue);;
         });
         return this;
     }
@@ -153,12 +149,8 @@ public class Lookup {
             strChangeEvents.put(key, list);
         }
 
-        list.add(new LookupEvent<T>() {
-
-            @Override
-            public void change(T oldValue, T newValue) {
-                event.change(newValue);
-            }
+        list.add((LookupEvent<T>) (T oldValue, T newValue) -> {
+            event.change(newValue);
         });
 
         return this;

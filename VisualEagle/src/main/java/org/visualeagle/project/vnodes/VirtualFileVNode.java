@@ -1,7 +1,6 @@
 package org.visualeagle.project.vnodes;
 
 import java.util.Objects;
-import javax.swing.Icon;
 
 /**
  * @author Dmitry

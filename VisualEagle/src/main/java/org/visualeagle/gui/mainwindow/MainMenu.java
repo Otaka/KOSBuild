@@ -2,7 +2,6 @@ package org.visualeagle.gui.mainwindow;
 
 import org.visualeagle.gui.projectnavigation.RecentItemsProcessor;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -102,12 +101,9 @@ public class MainMenu {
             menuItem.setAccelerator(KeyStroke.getKeyStroke(hotKey));
         }
 
-        menuItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("Action [" + action + "]");
-                actionManager.fire(action);
-            }
+        menuItem.addActionListener((ActionEvent e) -> {
+            System.out.println("Action [" + action + "]");
+            actionManager.fire(action);
         });
 
         if (icon != null) {
