@@ -1,6 +1,5 @@
 package org.visualeagle.gui.mainwindow;
 
-import org.visualeagle.gui.projectnavigation.RecentItemsProcessor;
 import java.awt.event.ActionEvent;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;

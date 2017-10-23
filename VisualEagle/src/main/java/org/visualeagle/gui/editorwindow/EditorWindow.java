@@ -94,8 +94,31 @@ public class EditorWindow extends JInternalFrame {
         }
     }
 
-    public boolean closeAllEditorWindows() {
-        System.out.println("Closing is not implemented yet");
+    public boolean closeAllEditorWindows() throws IOException {
+        for (int i = 0; i < jtabbedPane.getTabCount(); i++) {
+            AbstractEditor editor = (AbstractEditor) jtabbedPane.getComponentAt(i);
+            if (editor != null) {
+                if (editor.isModified()) {
+                    AskToSaveResult result = askToSaveEditor(editor);
+                    if (null == result) {
+                        editor.clearModified();
+                    } else switch (result) {
+                        case CANCEL:
+                            return false;
+                        case YES:
+                            editor.save();
+                            break;
+                        default:
+                            editor.clearModified();
+                            break;
+                    }
+
+                }
+
+                closeTab(editor);
+                i--;
+            }
+        }
         return true;
     }
 
@@ -116,13 +139,12 @@ public class EditorWindow extends JInternalFrame {
 
     public void closeTab(AbstractEditor abstractEditor) throws IOException {
         if (abstractEditor.isModified()) {
-            String message = "File " + StringUtils.abbreviateMiddle(abstractEditor.getFile().getName(), "...", 30) + " is modified. Save?";
-            int result = JOptionPane.showOptionDialog(this, message, "Question", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
-            if (result == JOptionPane.CANCEL_OPTION) {
+            AskToSaveResult result = askToSaveEditor(abstractEditor);
+            if (result == AskToSaveResult.CANCEL) {
                 return;
             }
 
-            if (result == JOptionPane.YES_OPTION) {
+            if (result == AskToSaveResult.YES) {
                 saveTab(abstractEditor);
             }
         }
@@ -134,6 +156,19 @@ public class EditorWindow extends JInternalFrame {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    private AskToSaveResult askToSaveEditor(AbstractEditor abstractEditor) throws IOException {
+        String message = "File " + StringUtils.abbreviateMiddle(abstractEditor.getFile().getName(), "...", 30) + " is modified. Save?";
+        int result = JOptionPane.showOptionDialog(this, message, "Question", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+        if (result == JOptionPane.CANCEL_OPTION) {
+            return AskToSaveResult.CANCEL;
+        }
+
+        if (result == JOptionPane.YES_OPTION) {
+            return AskToSaveResult.YES;
+        }
+        return AskToSaveResult.NO;
     }
 
     public AbstractEditor getCurrentEditor() {
@@ -170,7 +205,10 @@ public class EditorWindow extends JInternalFrame {
                     ex.printStackTrace();
                 }
             });
-
         }
+    }
+
+    private static enum AskToSaveResult {
+        YES, NO, CANCEL
     }
 }

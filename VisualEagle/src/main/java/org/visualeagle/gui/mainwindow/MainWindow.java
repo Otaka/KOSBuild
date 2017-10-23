@@ -11,11 +11,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.IOException;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.visualeagle.utils.GuiUtils;
-import org.visualeagle.gui.projectnavigation.RecentItemsProcessor;
 import org.visualeagle.gui.small.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.gui.logwindow.GuiLogPrinter;
 import org.visualeagle.gui.logwindow.LogWindow;
@@ -90,6 +90,13 @@ public class MainWindow extends JFrame {
         Lookup.get().put(MainWindow.class, this);
         Lookup.get().get(ActionManager.class).registerAction("open_project", this::openProject);
         Lookup.get().get(ActionManager.class).registerAction("open_recent_project", this::openRecentProject);
+        Lookup.get().get(ActionManager.class).registerAction("close_project", (ActionEvent a)->{
+            try {
+                closeOpenedProject();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
     }
 
     private void openProject(ActionEvent actionEvent) {
@@ -175,16 +182,22 @@ public class MainWindow extends JFrame {
         }
         try {
             ProjectStructure projectStructure = projectLoader.loadProject(projectFolder);
-            closeOpenedProject();
-            projectNavigationWindow.loadProject(projectStructure);
+            if(closeOpenedProject()){
+                projectNavigationWindow.loadProject(projectStructure);
+            }
+            
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RuntimeException(ex);
         }
     }
 
-    public void closeOpenedProject() {
-        editorWindow.closeAllEditorWindows();
+    public boolean closeOpenedProject() throws IOException {
+        if(!editorWindow.closeAllEditorWindows()){
+            return false;
+        }
+
         projectNavigationWindow.closeCurrentProject();
+        return true;
     }
 }

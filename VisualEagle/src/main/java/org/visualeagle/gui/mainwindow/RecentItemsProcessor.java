@@ -1,4 +1,4 @@
-package org.visualeagle.gui.projectnavigation;
+package org.visualeagle.gui.mainwindow;
 
 import java.awt.event.ActionEvent;
 import javax.swing.JMenu;

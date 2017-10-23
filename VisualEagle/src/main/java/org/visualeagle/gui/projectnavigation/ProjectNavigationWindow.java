@@ -147,7 +147,8 @@ public class ProjectNavigationWindow extends JInternalFrame {
     }
 
     public void closeCurrentProject() {
-        root.removeAllChildren();
+        ((DefaultTreeModel)jtree.getModel()).setRoot(null);
+        ((DefaultTreeModel)jtree.getModel()).reload();
     }
 
     public void loadProject(ProjectStructure projectStructure) {
