@@ -70,4 +70,17 @@ public abstract class AbstractEditor extends JPanel {
         Lookup.get().put("cursorPosition", "0:0");
     }
 
+    public void undo() {
+    }
+    public void redo() {
+    }
+    public void copy() {
+    }
+    public void cut() {
+    }
+    public void paste() {
+    }
+    public void selectAll() {
+    }
+
 }

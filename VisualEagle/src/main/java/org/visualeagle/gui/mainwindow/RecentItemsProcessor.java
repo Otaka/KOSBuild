@@ -33,8 +33,7 @@ public class RecentItemsProcessor {
                 JMenuItem recentItem = new JMenuItem(menuCaption);
                 recentItem.addActionListener((ActionEvent e) -> {
                     System.out.println("Action [" + path + "]");
-                    ActionEvent actionEvent = new ActionEvent(e, 0, path);
-                    Lookup.get().get(ActionManager.class).fire("open_recent_project", actionEvent);
+                    Lookup.get().get(ActionManager.class).fire("open_recent_project", path);
                 });
 
                 recentItemMenu.add(recentItem);

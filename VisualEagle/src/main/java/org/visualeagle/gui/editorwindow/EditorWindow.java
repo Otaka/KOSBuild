@@ -2,7 +2,6 @@ package org.visualeagle.gui.editorwindow;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.event.ActionEvent;
 import java.io.IOException;
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
@@ -60,22 +59,48 @@ public class EditorWindow extends JInternalFrame {
 
     private void initEvents() {
         ActionManager actionManager = Lookup.get().get(ActionManager.class);
-        actionManager.registerAction("save_file", (ActionEvent e) -> {
-            try {
-                save();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                throw new RuntimeException("Error while thread", ex);
-            }
-        });
-        actionManager.registerAction("save_all", (ActionEvent e) -> {
-            try {
-                saveAll();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-                throw new RuntimeException("Error while thread", ex);
-            }
-        });
+        actionManager.registerAction("save_file", this::save);
+        actionManager.registerAction("save_all", this::saveAll);
+      //  actionManager.registerAction("undo", this::undo);
+       // actionManager.registerAction("redo", this::redo);
+        actionManager.registerAction("cut", this::cut);
+        actionManager.registerAction("copy", this::copy);
+        actionManager.registerAction("paste", this::paste);
+    }
+
+    private void undo() {
+        AbstractEditor editor = getCurrentEditor();
+        if (editor != null) {
+            editor.undo();
+        }
+    }
+
+    private void redo() {
+        AbstractEditor editor = getCurrentEditor();
+        if (editor != null) {
+            editor.redo();
+        }
+    }
+
+    private void copy() {
+        AbstractEditor editor = getCurrentEditor();
+        if (editor != null) {
+            editor.copy();
+        }
+    }
+
+    private void cut() {
+        AbstractEditor editor = getCurrentEditor();
+        if (editor != null) {
+            editor.cut();
+        }
+    }
+
+    private void paste() {
+        AbstractEditor editor = getCurrentEditor();
+        if (editor != null) {
+            editor.paste();
+        }
     }
 
     private void save() throws IOException {
@@ -102,15 +127,17 @@ public class EditorWindow extends JInternalFrame {
                     AskToSaveResult result = askToSaveEditor(editor);
                     if (null == result) {
                         editor.clearModified();
-                    } else switch (result) {
-                        case CANCEL:
-                            return false;
-                        case YES:
-                            editor.save();
-                            break;
-                        default:
-                            editor.clearModified();
-                            break;
+                    } else {
+                        switch (result) {
+                            case CANCEL:
+                                return false;
+                            case YES:
+                                editor.save();
+                                break;
+                            default:
+                                editor.clearModified();
+                                break;
+                        }
                     }
 
                 }

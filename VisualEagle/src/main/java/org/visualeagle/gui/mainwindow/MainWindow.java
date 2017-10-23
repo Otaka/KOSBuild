@@ -88,18 +88,13 @@ public class MainWindow extends JFrame {
         statusPanel = new StatusPanel();
         getContentPane().add(statusPanel, BorderLayout.SOUTH);
         Lookup.get().put(MainWindow.class, this);
-        Lookup.get().get(ActionManager.class).registerAction("open_project", this::openProject);
-        Lookup.get().get(ActionManager.class).registerAction("open_recent_project", this::openRecentProject);
-        Lookup.get().get(ActionManager.class).registerAction("close_project", (ActionEvent a)->{
-            try {
-                closeOpenedProject();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
+        ActionManager actionManager=Lookup.get().get(ActionManager.class);
+        actionManager.registerAction("open_project", this::openProject);
+        actionManager.registerAction("open_recent_project", this::openRecentProject);
+        actionManager.registerAction("close_project", this::closeOpenedProject);
     }
 
-    private void openProject(ActionEvent actionEvent) {
+    private void openProject() {
         File projectFolder = new ProjectDirectoryChooser().chooseFolder(Lookup.get().get(MainWindow.class));
         if (projectFolder != null) {
             System.out.println("Open project = " + projectFolder.getAbsolutePath());
@@ -113,9 +108,9 @@ public class MainWindow extends JFrame {
         loadProject(projectFolder);
     }
 
-    private void openRecentProject(ActionEvent actionEvent) {
+    private void openRecentProject(Object actionEvent) {
         RecentItemsProcessor recentItemsProcessor = Lookup.get().get(RecentItemsProcessor.class);
-        String projectFolderString = actionEvent.getActionCommand();
+        String projectFolderString = (String)actionEvent;
         File buildFile = new File(projectFolderString, "kosbuild.json");
         if (!buildFile.exists()) {
             GuiUtils.error("Cannot find project at [" + buildFile.getAbsolutePath() + "]");

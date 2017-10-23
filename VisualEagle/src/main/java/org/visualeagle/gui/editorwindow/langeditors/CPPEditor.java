@@ -2,6 +2,8 @@ package org.visualeagle.gui.editorwindow.langeditors;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.DocumentEvent;
@@ -30,7 +32,6 @@ public class CPPEditor extends AbstractEditor {
     private void init() throws IOException {
         setLayout(new BorderLayout(0, 0));
         textArea = new RSyntaxTextArea(readFileFully());
-
         textArea.setSyntaxEditingStyle(RSyntaxTextArea.SYNTAX_STYLE_CPLUSPLUS);
         textArea.setTabsEmulated(true);
         textArea.discardAllEdits();
@@ -40,6 +41,15 @@ public class CPPEditor extends AbstractEditor {
         textArea.setMarkOccurrences(true);
         textArea.setMarkOccurrencesDelay(500);
         textArea.setPaintTabLines(true);
+        textArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    textArea.endAtomicEdit();
+                    textArea.beginAtomicEdit();
+                }
+            }
+        });
         textArea.addCaretListener((CaretEvent e) -> {
             try {
                 int position = e.getDot();
@@ -47,7 +57,7 @@ public class CPPEditor extends AbstractEditor {
                 int x1 = position - textArea.getLineStartOffset(y1);
                 String loc = "" + x1 + ":" + y1;
                 Lookup.get().put("cursorPosition", loc);
-            }catch (BadLocationException ex) {
+            } catch (BadLocationException ex) {
                 ex.printStackTrace();
             }
         });
@@ -77,6 +87,7 @@ public class CPPEditor extends AbstractEditor {
     }
 
     @Override
+
     public void setFocus() {
         textArea.requestFocusInWindow();
     }
@@ -88,6 +99,36 @@ public class CPPEditor extends AbstractEditor {
         } catch (BadLocationException ex) {
             throw new IllegalStateException(ex);
         }
+    }
+
+    @Override
+    public void undo() {
+        textArea.undoLastAction();
+    }
+
+    @Override
+    public void redo() {
+        textArea.redoLastAction();
+    }
+
+    @Override
+    public void copy() {
+        textArea.copy();
+    }
+
+    @Override
+    public void cut() {
+        textArea.cut();
+    }
+
+    @Override
+    public void paste() {
+        textArea.paste();
+    }
+
+    @Override
+    public void selectAll() {
+        textArea.selectAll();
     }
 
 }
