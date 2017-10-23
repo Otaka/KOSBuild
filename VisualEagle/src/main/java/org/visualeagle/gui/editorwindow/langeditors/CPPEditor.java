@@ -41,15 +41,6 @@ public class CPPEditor extends AbstractEditor {
         textArea.setMarkOccurrences(true);
         textArea.setMarkOccurrencesDelay(500);
         textArea.setPaintTabLines(true);
-        textArea.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                    textArea.endAtomicEdit();
-                    textArea.beginAtomicEdit();
-                }
-            }
-        });
         textArea.addCaretListener((CaretEvent e) -> {
             try {
                 int position = e.getDot();
