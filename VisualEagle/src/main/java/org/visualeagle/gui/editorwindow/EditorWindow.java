@@ -61,8 +61,9 @@ public class EditorWindow extends JInternalFrame {
         ActionManager actionManager = Lookup.get().get(ActionManager.class);
         actionManager.registerAction("save_file", this::save);
         actionManager.registerAction("save_all", this::saveAll);
-      //  actionManager.registerAction("undo", this::undo);
-       // actionManager.registerAction("redo", this::redo);
+        actionManager.registerAction("undo", this::undo);
+        actionManager.registerAction("redo", this::redo);
+        actionManager.registerAction("select_all", this::selectAll);
         actionManager.registerAction("cut", this::cut);
         actionManager.registerAction("copy", this::copy);
         actionManager.registerAction("paste", this::paste);
@@ -79,6 +80,13 @@ public class EditorWindow extends JInternalFrame {
         AbstractEditor editor = getCurrentEditor();
         if (editor != null) {
             editor.redo();
+        }
+    }
+    
+    private void selectAll() {
+        AbstractEditor editor = getCurrentEditor();
+        if (editor != null) {
+            editor.selectAll();
         }
     }
 

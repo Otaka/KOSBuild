@@ -182,7 +182,8 @@ public class MainWindow extends JFrame {
             if(closeOpenedProject()){
                 projectNavigationWindow.loadProject(projectStructure);
             }
-            
+
+            Lookup.get().get(ProjectManager.class).setCurrentProject(projectStructure);;
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RuntimeException(ex);
@@ -195,6 +196,7 @@ public class MainWindow extends JFrame {
         }
 
         projectNavigationWindow.closeCurrentProject();
+        Lookup.get().get(ProjectManager.class).closeCurrentProject();
         return true;
     }
 }
