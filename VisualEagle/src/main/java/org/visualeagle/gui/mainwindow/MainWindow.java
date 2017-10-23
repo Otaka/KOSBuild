@@ -19,6 +19,7 @@ import org.visualeagle.utils.GuiUtils;
 import org.visualeagle.gui.small.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.gui.logwindow.GuiLogPrinter;
 import org.visualeagle.gui.logwindow.LogWindow;
+import org.visualeagle.project.ProjectManager;
 import org.visualeagle.project.projectloaders.KosBuildGccProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectStructure;
@@ -88,6 +89,7 @@ public class MainWindow extends JFrame {
         statusPanel = new StatusPanel();
         getContentPane().add(statusPanel, BorderLayout.SOUTH);
         Lookup.get().put(MainWindow.class, this);
+        Lookup.get().put(ProjectManager.class,new ProjectManager());
         ActionManager actionManager=Lookup.get().get(ActionManager.class);
         actionManager.registerAction("open_project", this::openProject);
         actionManager.registerAction("open_recent_project", this::openRecentProject);

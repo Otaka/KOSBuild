@@ -1,11 +1,14 @@
 package org.visualeagle.gui.mainwindow;
 
 import java.awt.event.ActionEvent;
+import java.util.ArrayList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.KeyStroke;
-import org.visualeagle.gui.mainwindow.ActionManager;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
+import org.visualeagle.project.ProjectManager;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
 
@@ -30,55 +33,61 @@ public class MainMenu {
     }
 
     private JMenu createFileMenu() {
+        MenuList menuList = new MenuList();
         JMenu fileMenu = new JMenu("File");
         fileMenu.setMnemonic('F');
         fileMenu.add(createJMenuItem("New Project...", "new_project", "ctrl shift N", "newProject"));
         fileMenu.add(createJMenuItem("Open Project...", "open_project", "ctrl shift O", "openProject"));
-        fileMenu.add(createJMenuItem("Close Project", "close_project", null));
+        fileMenu.add(createJMenuItem("Close Project", "close_project", null, null));
         JMenu recentItemMenu = new JMenu("Recent Projects...");
         recentItemMenu.setEnabled(true);
         RecentItemsProcessor recentItemsProcessor = new RecentItemsProcessor(recentItemMenu);
         Lookup.get().put(RecentItemsProcessor.class, recentItemsProcessor);
         fileMenu.add(recentItemMenu);
         fileMenu.addSeparator();
-        fileMenu.add(createJMenuItem("Save", "save_file", "ctrl S", "save"));
-        fileMenu.add(createJMenuItem("Save All", "save_all", null, "save_all"));
+        fileMenu.add(menuList.put(createJMenuItem("Save", "save_file", "ctrl S", "save")));
+        fileMenu.add(menuList.put(createJMenuItem("Save All", "save_all", null, "save_all")));
         fileMenu.addSeparator();
 
-        fileMenu.add(createJMenuItem("Exit", "exit", null));
+        fileMenu.add(createJMenuItem("Exit", "exit", null, null));
+        processEnableDisableRequireMenu(fileMenu, menuList);
         return fileMenu;
     }
 
     private JMenu createEditMenu() {
-        JMenu fileMenu = new JMenu("Edit");
-        fileMenu.setMnemonic('E');
-        fileMenu.add(createJMenuItem("Undo", "undo", "ctrl Z", "undo"));
-        fileMenu.add(createJMenuItem("Redo", "redo", "ctrl shift Z", "redo"));
-        fileMenu.addSeparator();
-        fileMenu.add(createJMenuItem("Cut", "cut", "ctrl X", "cut"));
-        fileMenu.add(createJMenuItem("Copy", "copy", "ctrl C", "copy"));
-        fileMenu.add(createJMenuItem("Paste", "paste", "ctrl V", "paste"));
-        fileMenu.addSeparator();
-        fileMenu.add(createJMenuItem("Select All", "select_all", "ctrl A"));
-        fileMenu.addSeparator();
-        fileMenu.add(createJMenuItem("Find...", "find", "ctrl F"));
-        fileMenu.add(createJMenuItem("Replace...", "replace", "ctrl H"));
-        fileMenu.addSeparator();
-        fileMenu.add(createJMenuItem("Preferences...", "preferences", null));
-        return fileMenu;
+        MenuList menuList = new MenuList();
+        JMenu editMenu = new JMenu("Edit");
+        editMenu.setMnemonic('E');
+        editMenu.add(menuList.put(createJMenuItem("Undo", "undo", "ctrl Z", "undo")));
+        editMenu.add(menuList.put(createJMenuItem("Redo", "redo", "ctrl shift Z", "redo")));
+        editMenu.addSeparator();
+        editMenu.add(menuList.put(createJMenuItem("Cut", "cut", "ctrl X", "cut")));
+        editMenu.add(menuList.put(createJMenuItem("Copy", "copy", "ctrl C", "copy")));
+        editMenu.add(menuList.put(createJMenuItem("Paste", "paste", "ctrl V", "paste")));
+        editMenu.addSeparator();
+        editMenu.add(menuList.put(createJMenuItem("Select All", "select_all", "ctrl A", null)));
+        editMenu.addSeparator();
+        editMenu.add(menuList.put(createJMenuItem("Find...", "find", "ctrl F", null)));
+        editMenu.add(menuList.put(createJMenuItem("Replace...", "replace", "ctrl H", null)));
+        editMenu.addSeparator();
+        editMenu.add(createJMenuItem("Preferences...", "preferences", null, null));
+        processEnableDisableRequireMenu(editMenu, menuList);
+        return editMenu;
     }
 
     private JMenu createProjectMenu() {
-        JMenu fileMenu = new JMenu("Project");
-        fileMenu.setMnemonic('P');
-        fileMenu.add(createJMenuItem("Clean", "clean", null, null));
-        fileMenu.add(createJMenuItem("Build", "build", null, null));
-        fileMenu.add(createJMenuItem("Install", "install", null, null));
-        fileMenu.add(createJMenuItem("Clean Install", "clean_install", null, null));
-        fileMenu.addSeparator();
-        fileMenu.add(createJMenuItem("Run", "run_app", "F9", "run"));
-        fileMenu.add(createJMenuItem("Debug", "debug_app", "ctrl F9", "debug"));
-        return fileMenu;
+        MenuList menuList = new MenuList();
+        JMenu projectMenu = new JMenu("Project");
+        projectMenu.setMnemonic('P');
+        projectMenu.add(menuList.put(createJMenuItem("Clean", "clean", null, null)));
+        projectMenu.add(menuList.put(createJMenuItem("Build", "build", null, null)));
+        projectMenu.add(menuList.put(createJMenuItem("Install", "install", null, null)));
+        projectMenu.add(menuList.put(createJMenuItem("Clean Install", "clean_install", null, null)));
+        projectMenu.addSeparator();
+        projectMenu.add(menuList.put(createJMenuItem("Run", "run_app", "F9", "run")));
+        projectMenu.add(menuList.put(createJMenuItem("Debug", "debug_app", "ctrl F9", "debug")));
+        processEnableDisableRequireMenu(projectMenu, menuList);
+        return projectMenu;
     }
 
     private JMenu createHelpMenu() {
@@ -86,12 +95,8 @@ public class MainMenu {
         fileMenu.setMnemonic('H');
 
         fileMenu.add(createJMenuItem("Help Content", "help_content", null, "help"));
-        fileMenu.add(createJMenuItem("About", "help_about", null));
+        fileMenu.add(createJMenuItem("About", "help_about", null, null));
         return fileMenu;
-    }
-
-    private JMenuItem createJMenuItem(String text, String action, String hotKey) {
-        return createJMenuItem(text, action, hotKey, null);
     }
 
     private JMenuItem createJMenuItem(final String text, final String action, String hotKey, String icon) {
@@ -112,4 +117,33 @@ public class MainMenu {
         return menuItem;
     }
 
+    /**
+    Create event that handles enabling disabling menu items that requires project
+     */
+    private void processEnableDisableRequireMenu(JMenu menu, MenuList subMenuList) {
+        menu.addMenuListener(new MenuListener() {
+            @Override
+            public void menuSelected(MenuEvent e) {
+                boolean hasProject = Lookup.get().get(ProjectManager.class).getCurrentProject() != null;
+                for(JMenuItem menuItem:subMenuList){
+                    menuItem.setEnabled(hasProject);
+                }
+                
+            }
+            @Override
+            public void menuDeselected(MenuEvent e) {
+            }
+            @Override
+            public void menuCanceled(MenuEvent e) {
+            }
+        });
+    }
+
+    private static class MenuList extends ArrayList<JMenuItem> {
+
+        public JMenuItem put(JMenuItem item) {
+            add(item);
+            return item;
+        }
+    }
 }
