@@ -3,14 +3,11 @@ package org.visualeagle.gui.components.editorwindow;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import org.apache.commons.lang3.StringUtils;
 import org.visualeagle.gui.ActionManager;
 import org.visualeagle.project.vnodes.AbstractVNode;
@@ -25,6 +22,7 @@ public class EditorWindow extends JInternalFrame {
     private JTabbedPane jtabbedPane;
     private EditorFactory editorFactory;
     private ChunkedTextCollector titleTextCollector;
+
     public EditorWindow(String title, boolean resizable, boolean closable, boolean maximizable, boolean iconifiable) {
         super(title, resizable, closable, maximizable, iconifiable);
         editorFactory = new EditorFactory();
@@ -37,45 +35,45 @@ public class EditorWindow extends JInternalFrame {
         jtabbedPane = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         add(jtabbedPane);
         jtabbedPane.setOpaque(true);
-        jtabbedPane.setBackground(new Color(240,240,240));
-        titleTextCollector=new ChunkedTextCollector((String text) -> {
+        jtabbedPane.setBackground(new Color(240, 240, 240));
+        titleTextCollector = new ChunkedTextCollector((String text) -> {
             setTitle(text);
         });
+
         titleTextCollector.setSeparator("    ");
-        titleTextCollector.setTitles("title","Editor","fileName","");
-        
+        titleTextCollector.setTitles("title", "Editor", "fileName", "");
+        registerTabSwitchTitleChanger();
+    }
+
+    private void registerTabSwitchTitleChanger() {
         jtabbedPane.addChangeListener((ChangeEvent e) -> {
-            AbstractEditor currentEditor=getCurrentEditor();
-            if(currentEditor!=null){
-                titleTextCollector.setTitle("fileName", currentEditor.getFile().getName());
-            }else{
-                titleTextCollector.setTitle("fileName", "");
+            AbstractEditor currentEditor = getCurrentEditor();
+            String name;
+            if (currentEditor != null) {
+                name = currentEditor.getFile().getName();
+            } else {
+                name = "";
             }
+            titleTextCollector.setTitle("fileName", name);
         });
     }
 
     private void initEvents() {
         ActionManager actionManager = Lookup.get().get(ActionManager.class);
-        actionManager.registerAction("save_file", new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    save();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                    throw new RuntimeException("Error while thread", ex);
-                }
+        actionManager.registerAction("save_file", (ActionEvent e) -> {
+            try {
+                save();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                throw new RuntimeException("Error while thread", ex);
             }
         });
-        actionManager.registerAction("save_all", new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    saveAll();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                    throw new RuntimeException("Error while thread", ex);
-                }
+        actionManager.registerAction("save_all", (ActionEvent e) -> {
+            try {
+                saveAll();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+                throw new RuntimeException("Error while thread", ex);
             }
         });
     }
