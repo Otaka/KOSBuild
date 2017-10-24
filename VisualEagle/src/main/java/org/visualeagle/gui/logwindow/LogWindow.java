@@ -4,11 +4,14 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JInternalFrame;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.Timer;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -78,6 +81,28 @@ public class LogWindow extends JInternalFrame implements GuiLogPrinter {
         //});
         //timer.setRepeats(true);
         //timer.start();
+
+        Timer timer = new Timer(10, (ActionEvent e) -> {
+            if (!messageQueue.isEmpty()) {
+                int size = messageQueue.size();
+                List<String> strings = new ArrayList<String>();
+                messageQueue.drainTo(strings);
+                for(String str:strings){
+                    logTextArea.append(str);
+                }
+
+                if (logTextArea.getLineCount() > maxLineCount) {
+                    clearFirstLines(batchSizeToRemoveAfterLimit);
+                    disableLineNumbers();
+                }
+                if (autoscrollEnabled) {
+                    scrollToBottom();
+                }
+            }
+        });
+
+        timer.setRepeats(true);
+        timer.start();
     }
 
     public void disableLineNumbers() {
@@ -118,7 +143,6 @@ public class LogWindow extends JInternalFrame implements GuiLogPrinter {
         });
 
         popupMenu.add(autoScrollMenuItem);
-
         logTextArea.setPopupMenu(popupMenu);
     }
 
@@ -143,14 +167,8 @@ public class LogWindow extends JInternalFrame implements GuiLogPrinter {
 
     @Override
     public void print(String str) {
-        logTextArea.append(str);
-        if (logTextArea.getLineCount() > maxLineCount) {
-            clearFirstLines(batchSizeToRemoveAfterLimit);
-            disableLineNumbers();
-        }
-        if (autoscrollEnabled) {
-            scrollToBottom();
-        }
+        messageQueue.offer(str);
+
     }
 
     @Override
