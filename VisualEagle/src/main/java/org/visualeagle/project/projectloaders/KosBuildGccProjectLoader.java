@@ -8,6 +8,7 @@ import com.kosbuild.utils.Utils;
 import java.io.File;
 import org.apache.commons.lang3.StringUtils;
 import org.visualeagle.project.vnodes.AbstractVNode;
+import org.visualeagle.project.vnodes.LocalFileVNode;
 import org.visualeagle.project.vnodes.LocalFolderVNode;
 import org.visualeagle.project.vnodes.VirtualFolderVNode;
 import org.visualeagle.utils.ImageManager;
@@ -63,6 +64,7 @@ public class KosBuildGccProjectLoader extends ProjectLoader {
         rootNode.addChild(sourceFolder);
         rootNode.addChild(includeFolder);
         rootNode.addChild(dependencies);
+        rootNode.addChild(new LocalFileVNode(new File(projectStructure.getBuildFile())));
         rootNode.setUserObject(projectStructure);
         return rootNode;
     }

@@ -2,8 +2,6 @@ package org.visualeagle.gui.editorwindow.langeditors;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.io.IOException;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.DocumentEvent;
@@ -19,20 +17,22 @@ import org.visualeagle.utils.Lookup;
 /**
  * @author Dmitry
  */
-public class CPPEditor extends AbstractEditor {
+public class RSyntaxEditor extends AbstractEditor {
 
     private RSyntaxTextArea textArea;
     private RTextScrollPane scrollPane;
+    private String syntax;
 
-    public CPPEditor(AbstractVNode file, TabComponent tabComponent) throws IOException {
+    public RSyntaxEditor(AbstractVNode file, TabComponent tabComponent, String syntax) throws IOException {
         super(file, tabComponent);
+        this.syntax = syntax;
         init();
     }
 
     private void init() throws IOException {
         setLayout(new BorderLayout(0, 0));
         textArea = new RSyntaxTextArea(readFileFully());
-        textArea.setSyntaxEditingStyle(RSyntaxTextArea.SYNTAX_STYLE_CPLUSPLUS);
+        textArea.setSyntaxEditingStyle(syntax);
         textArea.setTabsEmulated(true);
         textArea.discardAllEdits();
         textArea.setCaretPosition(0);
