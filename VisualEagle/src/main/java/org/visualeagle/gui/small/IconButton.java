@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
+import org.visualeagle.utils.Utils;
 
 /**
  * @author Dmitry
@@ -60,10 +61,7 @@ public class IconButton extends JPanel {
     }
 
     private BufferedImage createGrayscaledImage(BufferedImage colorImage) {
-        BufferedImage newImage = new BufferedImage(colorImage.getWidth(), colorImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        Graphics g = newImage.getGraphics();
-        g.drawImage(colorImage, 0, 0, null);
-        g.dispose();
+        BufferedImage newImage = Utils.convertToGrayscaleWithAlphaChannel(colorImage);
         return newImage;
     }
 

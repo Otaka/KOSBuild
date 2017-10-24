@@ -7,7 +7,6 @@ import org.visualeagle.gui.componenteditor.ComponentEditorWindow;
 import org.visualeagle.utils.ChunkedTextCollector;
 import java.awt.Color;
 import java.awt.HeadlessException;
-import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -68,7 +67,7 @@ public class MainWindow extends JFrame {
         desktop.setBackground(new Color(240, 240, 240));
         desktop.setDragMode(JDesktopPane.LIVE_DRAG_MODE);
         getContentPane().add(desktop);
-        
+
         windowLocationService.setRootComponent(desktop);
         SwingUtilities.invokeLater(() -> {
             createProjectNavigationWindow();
@@ -89,11 +88,11 @@ public class MainWindow extends JFrame {
         setJMenuBar(mainMenu.constructMainMenu());
         statusPanel = new StatusPanel();
         getContentPane().add(statusPanel, BorderLayout.SOUTH);
-        MainToolBar mainToolbar=new MainToolBar();
+        MainToolBar mainToolbar = new MainToolBar();
         getContentPane().add(mainToolbar, BorderLayout.NORTH);
         Lookup.get().put(MainWindow.class, this);
-        Lookup.get().put(ProjectManager.class,new ProjectManager());
-        ActionManager actionManager=Lookup.get().get(ActionManager.class);
+        Lookup.get().put(ProjectManager.class, new ProjectManager());
+        ActionManager actionManager = Lookup.get().get(ActionManager.class);
         actionManager.registerAction("open_project", this::openProject);
         actionManager.registerAction("open_recent_project", this::openRecentProject);
         actionManager.registerAction("close_project", this::closeOpenedProject);
@@ -115,7 +114,7 @@ public class MainWindow extends JFrame {
 
     private void openRecentProject(Object actionEvent) {
         RecentItemsProcessor recentItemsProcessor = Lookup.get().get(RecentItemsProcessor.class);
-        String projectFolderString = (String)actionEvent;
+        String projectFolderString = (String) actionEvent;
         File buildFile = new File(projectFolderString, "kosbuild.json");
         if (!buildFile.exists()) {
             GuiUtils.error("Cannot find project at [" + buildFile.getAbsolutePath() + "]");
@@ -182,7 +181,7 @@ public class MainWindow extends JFrame {
         }
         try {
             ProjectStructure projectStructure = projectLoader.loadProject(projectFolder);
-            if(closeOpenedProject()){
+            if (closeOpenedProject()) {
                 projectNavigationWindow.loadProject(projectStructure);
             }
 
@@ -194,7 +193,7 @@ public class MainWindow extends JFrame {
     }
 
     public boolean closeOpenedProject() throws IOException {
-        if(!editorWindow.closeAllEditorWindows()){
+        if (!editorWindow.closeAllEditorWindows()) {
             return false;
         }
 

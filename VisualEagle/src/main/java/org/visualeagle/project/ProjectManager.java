@@ -16,9 +16,9 @@ import org.visualeagle.utils.Lookup;
 public class ProjectManager {
 
     private ProjectStructure projectStructure;
-
+    private ActionManager actionManager;
     public ProjectManager() {
-        ActionManager actionManager = Lookup.get().get(ActionManager.class);
+        actionManager = Lookup.get().get(ActionManager.class);
         actionManager.registerAction("clean", this::cleanCurrentProject);
         actionManager.registerAction("install", this::installCurrentProject);
         actionManager.registerAction("clean_install", this::cleanInstallCurrentProject);
@@ -30,10 +30,12 @@ public class ProjectManager {
 
     public void closeCurrentProject() {
         projectStructure = null;
+        actionManager.fire("projectClosed");
     }
 
     public void setCurrentProject(ProjectStructure projectStructure) {
         this.projectStructure = projectStructure;
+        actionManager.fire("projectOpened", projectStructure);
     }
 
     private boolean runKosBuild(String caption, String... commands) throws IOException {
