@@ -6,6 +6,7 @@ import com.kosbuild.config.BuildContext;
  * @author Dmitry
  */
 public abstract class AbstractPlugin {
+    public static final String ERROR_RESULT_NO_STACKTRACE="ERROR_NO_STACKTRACE";
     public static final String ERROR_RESULT="ERROR";
     public static final String DONE_RESULT="DONE";
             

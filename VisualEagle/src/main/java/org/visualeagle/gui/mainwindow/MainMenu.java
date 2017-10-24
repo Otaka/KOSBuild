@@ -80,9 +80,8 @@ public class MainMenu {
         JMenu projectMenu = new JMenu("Project");
         projectMenu.setMnemonic('P');
         projectMenu.add(menuList.put(createJMenuItem("Clean", "clean", null, null)));
-        projectMenu.add(menuList.put(createJMenuItem("Build", "build", null, null)));
         projectMenu.add(menuList.put(createJMenuItem("Install", "install", null, null)));
-        projectMenu.add(menuList.put(createJMenuItem("Clean Install", "clean_install", null, null)));
+        projectMenu.add(menuList.put(createJMenuItem("Clean Install", "clean_install", "shift F11", null)));
         projectMenu.addSeparator();
         projectMenu.add(menuList.put(createJMenuItem("Run", "run_app", "F9", "run")));
         projectMenu.add(menuList.put(createJMenuItem("Debug", "debug_app", "ctrl F9", "debug")));
@@ -128,7 +127,6 @@ public class MainMenu {
                 for(JMenuItem menuItem:subMenuList){
                     menuItem.setEnabled(hasProject);
                 }
-                
             }
             @Override
             public void menuDeselected(MenuEvent e) {

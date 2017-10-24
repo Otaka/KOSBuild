@@ -17,6 +17,7 @@ import com.kosbuild.plugins.AbstractPlugin;
 import com.kosbuild.plugins.PluginManager;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 
 /**
@@ -46,17 +47,17 @@ public class Compiler {
         List<File> processedObjectFiles = new ArrayList<>();
         Set<String> seenFileNames = new HashSet<>();
         if (!compile(buildContext, pluginConfig, sourceFilesExtensions, librariesPaths, librariesNames, processedObjectFiles, seenFileNames, stopOnFirstError, generateDebugInfo)) {
-            return AbstractPlugin.ERROR_RESULT;
+            return AbstractPlugin.ERROR_RESULT_NO_STACKTRACE;
         }
 
         if (resultBinaryType == BinaryType.APPLICATION) {
             log.info("Build project as executable application");
             if (!linking(pluginConfig, buildContext, librariesPaths, librariesNames)) {
-                return AbstractPlugin.ERROR_RESULT;
+                return AbstractPlugin.ERROR_RESULT_NO_STACKTRACE;
             }
             if (doObjCopy) {
                 if (!objCopyStage(pluginConfig, buildContext)) {
-                    return AbstractPlugin.ERROR_RESULT;
+                    return AbstractPlugin.ERROR_RESULT_NO_STACKTRACE;
                 }
             }
             if (!hasConsole) {
@@ -65,7 +66,7 @@ public class Compiler {
         } else if (resultBinaryType == BinaryType.STATIC_LIBRARY) {
             log.info("Build project as static library");
             if (!makeStaticLibrary(pluginConfig, buildContext, processedObjectFiles)) {
-                return AbstractPlugin.ERROR_RESULT;
+                return AbstractPlugin.ERROR_RESULT_NO_STACKTRACE;
             }
         }
 
@@ -89,7 +90,7 @@ public class Compiler {
         File targetFolder = CompilerUtils.getTargetFolder(buildContext.getProjectFolder());
         List<String> sharedArguments = createSharedCompilerArgumentsList(buildContext, pluginConfig, generateDebugInfo);
         List<File> sourceFiles = listSourceFiles(buildContext, sourceFilesExtensions);
-        log.info("Compiling " + sourceFiles.size() + " source files");
+        log.info("Compiling " + sourceFiles.size() + " source file"+(sourceFiles.size()==1?"":"s"));
         PluginConfig gccProjectInfoPluginConfig = PluginManager.get().loadPluginConfig("gccProjectInfo:0.1");
         ProjectInfo projectInfo = Utils.reconvertWithJson(gccProjectInfoPluginConfig.call(buildContext), ProjectInfo.class);
 

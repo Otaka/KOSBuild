@@ -206,7 +206,33 @@ public class KOSBuild {
     }
 
     private void loadConfig() throws FileNotFoundException {
-        Config.get().init(new File(Utils.getAppFolder(), "../../configuration.json"));
+        Config.init(searchConfigFile());
+    }
+
+    private File searchConfigFile() {
+        File f = new File(Utils.getAppFolder(), "../../configuration.json");
+        if (f.exists()) {
+            return f;
+        }
+        File f2 = new File(Utils.getAppFolder(), "conf/configuration.json");
+        if (f2.exists()) {
+            return f2;
+        }
+
+        File f3 = new File(Utils.getAppFolder(), "configuration.json");
+        if (f3.exists()) {
+            return f3;
+        }
+        File f4 = new File("configuration.json");
+        if (f4.exists()) {
+            return f4;
+        }
+        File f5 = new File("conf/configuration.json");
+        if (f5.exists()) {
+            return f5;
+        }
+
+        throw new IllegalArgumentException("Cannot find configuration json file for KOSBuild. Search locations: [" + f.getAbsolutePath() + "," + f2.getAbsolutePath() + "," + f3.getAbsolutePath() + "," + f4.getAbsolutePath() + "," + f5.getAbsolutePath() + "]");
     }
 
     private void replacePlaceholders(JsonElement json, Map<String, String> propertiesMap) {

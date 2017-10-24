@@ -1,87 +1,61 @@
 package org.visualeagle.utils;
 
-
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.commons.io.IOUtils;
 
 public class ExternalProcessRunner {
-    private Process process;
-    private AtomicBoolean printThreadFlag;
-    private StringBuffer sb = new StringBuffer();
 
-    public static ExternalProcessRunner startProgram( String[] args) throws IOException, InterruptedException {
-     /*   Process process = new ProcessBuilder().command(args);
-        final InputStream is = ps.process.getInputStream();
-        final AtomicBoolean printThreadRunFlag = new AtomicBoolean(true);
-        ps.printThreadFlag = printThreadRunFlag;
-        Thread printThread = new Thread(new Runnable() {
+    public boolean run(String[] args, File workingFolder, LineCallback lineCallback, boolean printToStdout) throws IOException {
+        ProcessBuilder processBuilder = new ProcessBuilder(args).directory(workingFolder);
+        processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
+        processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
+        Process process = processBuilder.start();
+        InputStream inputStream = process.getInputStream();
+        InputStream errorStream = process.getErrorStream();
+        AtomicInteger streamCounter = new AtomicInteger();
+        streamCopy(inputStream, lineCallback, printToStdout, streamCounter);
+        streamCopy(errorStream, lineCallback, printToStdout, streamCounter);
+        try {
+            int result = process.waitFor();
+            while (streamCounter.get() != 0) {
+                Thread.sleep(10);
+            }
+            return result == 0;
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+
+        return false;
+    }
+
+    private void streamCopy(InputStream stream, LineCallback lineCallback, boolean printToStdOut, AtomicInteger streamCounter) {
+        streamCounter.incrementAndGet();
+        Thread thread = new Thread("StreamCopier") {
             @Override
             public void run() {
-                try {
-                    print(is, printThreadRunFlag, ps);
-                } catch (IOException e) {
-                    logger.warn("", e);
+                Scanner scanner = new Scanner(IOUtils.buffer(stream));
+                boolean firstLine = true;
+                while (scanner.hasNextLine()) {
+                    String line = scanner.nextLine();
+                    if (printToStdOut) {
+                        System.out.println(line);
+                    }
+
+                    if (lineCallback != null) {
+                        lineCallback.onNextLine(line, firstLine);
+                    }
+
+                    firstLine = false;
                 }
+                streamCounter.decrementAndGet();
             }
-        });
+        };
 
-        printThread.start();
-        return ps;*/
-     return null;
+        thread.setDaemon(true);
+        thread.start();
     }
-/*
-
-    private static void print(InputStream inputStream, AtomicBoolean runFlag, ExternalProcess process) throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
-        String line;
-        while ((line = in.readLine()) != null && runFlag.get()) {
-            logger.info(line);
-            process.sb.append(line).append("\n");
-        }
-        inputStream.close();
-    }
-
-    public int getExitValue() {
-        return process != null ? process.exitValue() : 0;
-    }
-
-    public void waitFor() {
-        if (process != null) {
-            try {
-                final int exitCode = process.waitFor();
-                logger.info("application exit status: " + exitCode);
-            } catch (InterruptedException e) {
-                logger.warn("", e);
-            }
-            printThreadFlag.set(false);
-        }
-    }
-
-    public String getOutput() {
-        return sb.toString();
-    }
-
-    public void kill() {
-        process.destroy();
-    }
-
-    public boolean isRunning() {
-        if (process == null) {
-            return false;
-        }
-
-        try {
-            process.exitValue();
-            return false;
-        } catch (IllegalThreadStateException e) {
-            return true;
-        }
-    }
-
-    public boolean logContains(String s) {
-        return getOutput().contains(s);
-    }*/
 }

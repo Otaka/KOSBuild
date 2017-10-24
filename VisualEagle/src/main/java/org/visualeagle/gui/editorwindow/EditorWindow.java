@@ -118,7 +118,7 @@ public class EditorWindow extends JInternalFrame {
         }
     }
 
-    private void saveAll() throws IOException {
+    public void saveAll() throws IOException {
         for (int i = 0; i < jtabbedPane.getTabCount(); i++) {
             AbstractEditor editor = (AbstractEditor) jtabbedPane.getComponentAt(i);
             if (editor != null) {

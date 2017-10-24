@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.concurrent.ArrayBlockingQueue;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JInternalFrame;
 import javax.swing.JMenuItem;
@@ -25,6 +26,7 @@ public class LogWindow extends JInternalFrame implements GuiLogPrinter {
     private RSyntaxTextArea logTextArea;
     private RTextScrollPane scroll;
     private JMenuItem autoScrollMenuItem;
+    private ArrayBlockingQueue<String> messageQueue = new ArrayBlockingQueue<String>(5000);
 
     public LogWindow(String title, boolean resizable, boolean closable, boolean maximizable, boolean iconifiable) {
         super(title, resizable, closable, maximizable, iconifiable);
@@ -103,9 +105,7 @@ public class LogWindow extends JInternalFrame implements GuiLogPrinter {
         popupMenu.addSeparator();
         JMenuItem clearItem = new JMenuItem("Clear");
         clearItem.addActionListener((ActionEvent e) -> {
-            logTextArea.discardAllEdits();
-            logTextArea.setText("");
-            logTextArea.discardAllEdits();
+            clear();
         });
 
         popupMenu.add(clearItem);
@@ -156,6 +156,13 @@ public class LogWindow extends JInternalFrame implements GuiLogPrinter {
     @Override
     public void println(String str) {
         print(str + "\n");
+    }
+
+    @Override
+    public void clear() {
+        logTextArea.discardAllEdits();
+        logTextArea.setText("");
+        logTextArea.discardAllEdits();
     }
 
 }

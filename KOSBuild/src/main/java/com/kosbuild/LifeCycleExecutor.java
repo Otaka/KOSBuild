@@ -3,6 +3,7 @@ package com.kosbuild;
 import com.kosbuild.config.BuildContext;
 import com.kosbuild.plugins.AbstractPlugin;
 import com.kosbuild.plugins.PluginConfig;
+import com.kosbuild.utils.BuildRuntimeException;
 import com.kosbuild.utils.Utils;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,7 @@ import org.slf4j.Logger;
 public class LifeCycleExecutor {
 
     static final Logger log = Utils.getLogger();
-    
+
     public static String[] cleanStage = new String[]{
         AbstractPlugin.CLEAN
     };
@@ -70,13 +71,18 @@ public class LifeCycleExecutor {
                     log.info("Run step [" + currentStep + "]");
                     logWritten = true;
                 }
-                
+
                 AbstractPlugin pluginObject = plugin.getDynamicPluginObject();
                 try {
-                    
-                    if(plugin.call(buildContext, currentStep)==AbstractPlugin.ERROR_RESULT){
-                        throw new RuntimeException("Error while execute plugin [" + pluginObject + "] on step [" + currentStep + "]");
+                    Object pluginResult = plugin.call(buildContext, currentStep);
+                    if (pluginResult == AbstractPlugin.ERROR_RESULT) {
+                        throw new BuildRuntimeException("Error while execute plugin [" + pluginObject + "] on step [" + currentStep + "]");
                     }
+                    if (pluginResult == AbstractPlugin.ERROR_RESULT_NO_STACKTRACE) {
+                        throw new BuildRuntimeException("Error while execute plugin [" + pluginObject + "] on step [" + currentStep + "]").setDoNotPrintStacktrace(true);
+                    }
+                } catch (BuildRuntimeException ex) {
+                    throw ex;
                 } catch (Exception ex) {
                     throw new RuntimeException("Error while execute plugin [" + pluginObject + "] on step [" + currentStep + "]", ex);
                 }

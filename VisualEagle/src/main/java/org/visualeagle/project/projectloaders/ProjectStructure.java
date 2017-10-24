@@ -20,7 +20,7 @@ public class ProjectStructure {
     private List<String> dependenciesLibraryPaths = new ArrayList<>();
     private List<String> dependenciesLibraryNames = new ArrayList<>();
     private List<String> sourcePaths = new ArrayList<>();
-    private File buildFile;
+    private String buildFile;
 
     private AbstractVNode rootProjectVFile;
 
@@ -64,11 +64,11 @@ public class ProjectStructure {
         return librariesPath;
     }
 
-    public void setBuildFile(File buildFile) {
+    public void setBuildFile(String buildFile) {
         this.buildFile = buildFile;
     }
 
-    public File getBuildFile() {
+    public String getBuildFile() {
         return buildFile;
     }
 
