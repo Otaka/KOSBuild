@@ -75,19 +75,13 @@ public class LogWindow extends JInternalFrame implements GuiLogPrinter {
         add(scroll);
         createPopupMenu();
         enableAutoscroll(true);
-        //for testing add lines
-        //Timer timer = new Timer(500, (ActionEvent e) -> {
-        //    println("" + (int) (Math.random() * 50000) + " line " + RandomStringUtils.randomAlphanumeric((int) (Math.random() * 600)));
-        //});
-        //timer.setRepeats(true);
-        //timer.start();
 
         Timer timer = new Timer(10, (ActionEvent e) -> {
             if (!messageQueue.isEmpty()) {
                 int size = messageQueue.size();
                 List<String> strings = new ArrayList<String>();
                 messageQueue.drainTo(strings);
-                for(String str:strings){
+                for (String str : strings) {
                     logTextArea.append(str);
                 }
 

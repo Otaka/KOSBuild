@@ -15,6 +15,7 @@ import javax.swing.JPanel;
 public class IconButton extends JPanel {
 
     private BufferedImage image;
+    private BufferedImage grayedImage;
     private Color backgroundColor;
     private Color borderColor;
     private boolean selected = false;
@@ -31,8 +32,10 @@ public class IconButton extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                selected = true;
-                repaint();
+                if (isEnabled()) {
+                    selected = true;
+                    repaint();
+                }
             }
 
             @Override
@@ -43,8 +46,10 @@ public class IconButton extends JPanel {
 
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (actionListener != null) {
-                    actionListener.actionPerformed(new ActionEvent(IconButton.this, 0, "click"));
+                if (isEnabled()) {
+                    if (actionListener != null) {
+                        actionListener.actionPerformed(new ActionEvent(IconButton.this, 0, "click"));
+                    }
                 }
             }
         });
@@ -54,6 +59,14 @@ public class IconButton extends JPanel {
         this.actionListener = actionListener;
     }
 
+    private BufferedImage createGrayscaledImage(BufferedImage colorImage) {
+        BufferedImage newImage = new BufferedImage(colorImage.getWidth(), colorImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+        Graphics g = newImage.getGraphics();
+        g.drawImage(colorImage, 0, 0, null);
+        g.dispose();
+        return newImage;
+    }
+
     @Override
     public void paint(Graphics g) {
         super.paint(g);
@@ -61,11 +74,21 @@ public class IconButton extends JPanel {
             g.setColor(backgroundColor);
             g.fillRect(1, 1, getWidth() - 2, getHeight() - 2);
             g.setColor(borderColor);
-            g.drawRect(0, 0, getWidth()-1, getHeight()-1);
+            g.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
         }
 
-        int imageX = getWidth() / 2 - image.getWidth() / 2;
-        int imageY = getHeight() / 2 - image.getHeight() / 2;
-        g.drawImage(image, imageX, imageY, this);
+        BufferedImage imageToDraw;
+        if (isEnabled()) {
+            imageToDraw = image;
+        } else {
+            if (grayedImage == null) {
+                grayedImage = createGrayscaledImage(image);
+            }
+            imageToDraw = grayedImage;
+        }
+
+        int imageX = getWidth() / 2 - imageToDraw.getWidth() / 2;
+        int imageY = getHeight() / 2 - imageToDraw.getHeight() / 2;
+        g.drawImage(imageToDraw, imageX, imageY, this);
     }
 }

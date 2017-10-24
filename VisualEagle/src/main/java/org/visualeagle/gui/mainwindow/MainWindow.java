@@ -68,6 +68,7 @@ public class MainWindow extends JFrame {
         desktop.setBackground(new Color(240, 240, 240));
         desktop.setDragMode(JDesktopPane.LIVE_DRAG_MODE);
         getContentPane().add(desktop);
+        
         windowLocationService.setRootComponent(desktop);
         SwingUtilities.invokeLater(() -> {
             createProjectNavigationWindow();
@@ -88,6 +89,8 @@ public class MainWindow extends JFrame {
         setJMenuBar(mainMenu.constructMainMenu());
         statusPanel = new StatusPanel();
         getContentPane().add(statusPanel, BorderLayout.SOUTH);
+        MainToolBar mainToolbar=new MainToolBar();
+        getContentPane().add(mainToolbar, BorderLayout.NORTH);
         Lookup.get().put(MainWindow.class, this);
         Lookup.get().put(ProjectManager.class,new ProjectManager());
         ActionManager actionManager=Lookup.get().get(ActionManager.class);

@@ -47,21 +47,5 @@ public class StatusPanel extends JPanel {
         g.drawLine(0, 1, getWidth(), 1);
     }
 
-    private static class SeparatorPanel extends JPanel {
-
-        public SeparatorPanel() {
-            setPreferredSize(new Dimension(2, defaultComponentHeight));
-        }
-
-        @Override
-        public void paint(Graphics g) {
-            super.paint(g);
-            g.setColor(borderColor);
-            g.drawLine(0, 0, 0, getHeight() - 4);
-            g.setColor(Color.WHITE);
-            g.drawLine(1, 0, 1, getHeight() - 4);
-        }
-
-    }
 
 }
