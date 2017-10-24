@@ -2,7 +2,6 @@ package org.visualeagle.project;
 
 import java.io.File;
 import java.io.IOException;
-import javax.swing.SwingUtilities;
 import org.apache.commons.lang3.ArrayUtils;
 import org.visualeagle.gui.editorwindow.EditorWindow;
 import org.visualeagle.gui.logwindow.GuiLogPrinter;
@@ -49,17 +48,14 @@ public class ProjectManager {
         args = ArrayUtils.addAll(args, commands);
         try {
             boolean result = externalRun.run(args, new File("./kosbuild"), (String line, boolean first) -> {
-                SwingUtilities.invokeLater(() -> {
-                    consolePrinter.println(line);
-                });
+                consolePrinter.println(line);
             }, true);
-            SwingUtilities.invokeLater(() -> {
-                if (result) {
-                    consolePrinter.println("SUCCESS");
-                } else {
-                    consolePrinter.println("FAILURE");
-                }
-            });
+
+            if (result) {
+                consolePrinter.println("SUCCESS");
+            } else {
+                consolePrinter.println("FAILURE");
+            }
 
             return result;
         } catch (IOException ex) {
