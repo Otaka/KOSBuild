@@ -29,25 +29,27 @@ public class MainToolBar extends JPanel {
     private void init() {
         setPreferredSize(new Dimension(10, 27));
         setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        addButton("newProject", "new_project", false);
-        addButton("openProject", "open_project", false);
+        addButton("Create new project","newProject", "new_project", false);
+        addButton("Open existing project","openProject", "open_project", false);
         add(new SeparatorPanel(25));
 
-        addButton("save", "save_file", true);
-        addButton("save_all", "save_all", true);
+        addButton("Save file","save", "save_file", true);
+        addButton("Save all modified files","save_all", "save_all", true);
         add(new SeparatorPanel(25));
 
-        addButton("undo", "undo", true);
-        addButton("redo", "redo", true);
+        addButton("Undo","undo", "undo", true);
+        addButton("Redo","redo", "redo", true);
         add(new SeparatorPanel(25));
 
-        addButton("cut", "cut", true);
-        addButton("copy", "copy", true);
-        addButton("paste", "paste", true);
+        addButton("Cut","cut", "cut", true);
+        addButton("Copy","copy", "copy", true);
+        addButton("Paste","paste", "paste", true);
         add(new SeparatorPanel(25));
 
-        addButton("run", "run_app", true);
-        addButton("debug", "debug_app", true);
+        addButton("Clean and install project","build", "clean_install", true);
+        add(new SeparatorPanel(25));
+        addButton("Run application","run", "run_app", true);
+        addButton("Debug application","debug", "debug_app", true);
         projectOpened(false);
         Lookup.get().get(ActionManager.class).registerAction("projectOpened", new RunnableWithParams() {
             @Override
@@ -70,9 +72,10 @@ public class MainToolBar extends JPanel {
         }
     }
 
-    private void addButton(String image, String action, boolean requireProject) {
-        IconButton iconButton = new IconButton(ImageManager.get().getImage(image), new Color(0, 0, 255, 50), new Color(0, 0, 255, 100));
+    private void addButton(String tooltip, String image, String action, boolean requireProject) {
+        IconButton iconButton = new IconButton(ImageManager.get().getImage(image));
         iconButton.setPreferredSize(new Dimension(25, 25));
+        iconButton.setToolTipText(tooltip);
         iconButton.setActionListener((ActionEvent e) -> {
             Lookup.get().get(ActionManager.class).fire(action);
         });

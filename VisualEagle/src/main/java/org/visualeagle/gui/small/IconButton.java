@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
+import javax.swing.Timer;
 import org.visualeagle.utils.Utils;
 
 /**
@@ -15,17 +16,26 @@ import org.visualeagle.utils.Utils;
  */
 public class IconButton extends JPanel {
 
-    private BufferedImage image;
+    private BufferedImage[] image;
     private BufferedImage grayedImage;
     private Color backgroundColor;
     private Color borderColor;
     private boolean selected = false;
     private ActionListener actionListener;
+    private Timer animationTimer;
+    private int animationFrameIndex = 0;
 
     public IconButton(BufferedImage image, Color backgroundColor, Color borderColor) {
-        this.image = image;
+        setIcon(image);
         this.backgroundColor = backgroundColor;
         this.borderColor = borderColor;
+        initListeners();
+    }
+
+    public IconButton(BufferedImage image) {
+        setIcon(image);
+        this.backgroundColor = new Color(0, 0, 255, 50);
+        this.borderColor = new Color(0, 0, 255, 100);
         initListeners();
     }
 
@@ -56,6 +66,43 @@ public class IconButton extends JPanel {
         });
     }
 
+    public void setIcon(BufferedImage... image) {
+        this.image = image;
+        grayedImage = null;
+        animationFrameIndex = 0;
+        restartTimer();
+        repaint();
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        restartTimer();
+    }
+
+    private void restartTimer() {
+        if (isEnabled() && image.length > 1) {
+            if (animationTimer == null) {
+                animationTimer = createAnimationTimer();
+            }
+            if (!animationTimer.isRunning()) {
+                animationTimer.start();
+            }
+
+        } else {
+            if (animationTimer != null) {
+                animationTimer.stop();
+            }
+        }
+    }
+
+    private Timer createAnimationTimer() {
+        return new Timer(500, (ActionEvent e) -> {
+            animationFrameIndex++;
+            repaint();
+        });
+    }
+
     public void setActionListener(ActionListener actionListener) {
         this.actionListener = actionListener;
     }
@@ -77,10 +124,10 @@ public class IconButton extends JPanel {
 
         BufferedImage imageToDraw;
         if (isEnabled()) {
-            imageToDraw = image;
+            imageToDraw = image[animationFrameIndex % image.length];
         } else {
             if (grayedImage == null) {
-                grayedImage = createGrayscaledImage(image);
+                grayedImage = createGrayscaledImage(image[0]);
             }
             imageToDraw = grayedImage;
         }

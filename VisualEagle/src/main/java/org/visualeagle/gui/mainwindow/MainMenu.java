@@ -38,7 +38,7 @@ public class MainMenu {
         fileMenu.setMnemonic('F');
         fileMenu.add(createJMenuItem("New Project...", "new_project", "ctrl shift N", "newProject"));
         fileMenu.add(createJMenuItem("Open Project...", "open_project", "ctrl shift O", "openProject"));
-        fileMenu.add(createJMenuItem("Close Project", "close_project", null, null));
+        fileMenu.add(menuList.put(createJMenuItem("Close Project", "close_project", null, null)));
         JMenu recentItemMenu = new JMenu("Recent Projects...");
         recentItemMenu.setEnabled(true);
         RecentItemsProcessor recentItemsProcessor = new RecentItemsProcessor(recentItemMenu);
@@ -81,7 +81,7 @@ public class MainMenu {
         projectMenu.setMnemonic('P');
         projectMenu.add(menuList.put(createJMenuItem("Clean", "clean", null, null)));
         projectMenu.add(menuList.put(createJMenuItem("Install", "install", null, null)));
-        projectMenu.add(menuList.put(createJMenuItem("Clean Install", "clean_install", "shift F11", null)));
+        projectMenu.add(menuList.put(createJMenuItem("Clean Install", "clean_install", "shift F11","build")));
         projectMenu.addSeparator();
         projectMenu.add(menuList.put(createJMenuItem("Run", "run_app", "F9", "run")));
         projectMenu.add(menuList.put(createJMenuItem("Debug", "debug_app", "ctrl F9", "debug")));

@@ -14,6 +14,7 @@ import java.io.IOException;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import org.visualeagle.gui.connectionManager.ConnectionManager;
 import org.visualeagle.utils.GuiUtils;
 import org.visualeagle.gui.small.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.gui.logwindow.GuiLogPrinter;
@@ -86,12 +87,16 @@ public class MainWindow extends JFrame {
         });
         mainMenu = new MainMenu();
         setJMenuBar(mainMenu.constructMainMenu());
+
+        Lookup.get().put(ConnectionManager.class, new ConnectionManager());
+
         statusPanel = new StatusPanel();
         getContentPane().add(statusPanel, BorderLayout.SOUTH);
         MainToolBar mainToolbar = new MainToolBar();
         getContentPane().add(mainToolbar, BorderLayout.NORTH);
         Lookup.get().put(MainWindow.class, this);
         Lookup.get().put(ProjectManager.class, new ProjectManager());
+
         ActionManager actionManager = Lookup.get().get(ActionManager.class);
         actionManager.registerAction("open_project", this::openProject);
         actionManager.registerAction("open_recent_project", this::openRecentProject);

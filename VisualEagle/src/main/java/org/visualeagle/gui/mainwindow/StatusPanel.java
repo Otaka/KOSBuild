@@ -7,6 +7,7 @@ import java.awt.FlowLayout;
 import java.awt.Graphics;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import org.visualeagle.gui.connectionManager.ConnectionStatusPanel;
 import org.visualeagle.utils.Lookup;
 
 /**
@@ -17,13 +18,13 @@ public class StatusPanel extends JPanel {
     private JLabel cursorPositionLabel;
     private static int defaultComponentHeight = 20;
     private static Color borderColor = new Color(160, 160, 160);
-
+    private ConnectionStatusPanel connectionStatusPanel;
     public StatusPanel() {
         init();
     }
 
     private void init() {
-        setPreferredSize(new Dimension(10, 27));
+        setPreferredSize(new Dimension(10, 30));
         setOpaque(true);
         setLayout(new FlowLayout(FlowLayout.TRAILING));
         cursorPositionLabel = new JLabel("0:0", JLabel.CENTER);
@@ -31,8 +32,11 @@ public class StatusPanel extends JPanel {
         cursorPositionPanel.setPreferredSize(new Dimension(100, defaultComponentHeight));
         cursorPositionPanel.setLayout(new BorderLayout(0, 0));
         cursorPositionPanel.add(cursorPositionLabel);
+        connectionStatusPanel=new ConnectionStatusPanel();
+        add(connectionStatusPanel);
         add(new SeparatorPanel());
         add(cursorPositionPanel);
+        
         Lookup.get().addChangeEvent("cursorPosition", (String oldValue, String newValue) -> {
             cursorPositionLabel.setText(newValue);
         });
