@@ -1,11 +1,14 @@
 package org.visualeagle.gui.connectionManager;
 
+import org.visualeagle.gui.connectionManager.connectionwindow.NewConnectionWindow;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import org.visualeagle.gui.mainwindow.MainWindow;
 import org.visualeagle.gui.small.IconButton;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
@@ -17,14 +20,24 @@ public class ConnectionStatusPanel extends JPanel {
 
     private IconButton connectDisconnectButton;
     private ConnectionManager connectionManager;
+    private JLabel label;
 
     public ConnectionStatusPanel() {
-        setPreferredSize(new Dimension(200, 25));
-        setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        connectDisconnectButton = createConnectDisconnectButton();
-        setDisconnectedStatus();
-        add(connectDisconnectButton);
+        init();
+    }
 
+    private void init() {
+        setPreferredSize(new Dimension(200, 25));
+        setLayout(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        connectDisconnectButton = createConnectDisconnectButton();
+        add(connectDisconnectButton);
+        setDisconnectedStatus();
+        label = new JLabel("Not connected");
+        add(label);
+        createConnectionManager();
+    }
+
+    private void createConnectionManager() {
         connectionManager = Lookup.get().get(ConnectionManager.class);
         connectionManager.addConnectionListener(new ConnectionEvent() {
             @Override
@@ -63,6 +76,7 @@ public class ConnectionStatusPanel extends JPanel {
         } else {
             setConnectingStatus();
             NewConnectionWindow connectionWindow = new NewConnectionWindow();
+            connectionWindow.setLocationRelativeTo(Lookup.get().get(MainWindow.class));
             connectionWindow.setVisible(true);
             setDisconnectedStatus();
         }
