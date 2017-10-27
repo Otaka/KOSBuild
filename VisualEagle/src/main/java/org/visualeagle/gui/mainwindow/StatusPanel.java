@@ -7,7 +7,7 @@ import java.awt.FlowLayout;
 import java.awt.Graphics;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import org.visualeagle.gui.connectionManager.ConnectionStatusPanel;
+import org.visualeagle.gui.connectionmanager.ConnectionStatusPanel;
 import org.visualeagle.utils.Lookup;
 
 /**

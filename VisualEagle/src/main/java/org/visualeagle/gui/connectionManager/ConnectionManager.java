@@ -1,4 +1,4 @@
-package org.visualeagle.gui.connectionManager;
+package org.visualeagle.gui.connectionmanager;
 
 import java.util.ArrayList;
 import java.util.List;

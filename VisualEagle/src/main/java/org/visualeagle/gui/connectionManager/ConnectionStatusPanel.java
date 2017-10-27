@@ -1,6 +1,6 @@
-package org.visualeagle.gui.connectionManager;
+package org.visualeagle.gui.connectionmanager;
 
-import org.visualeagle.gui.connectionManager.connectionwindow.NewConnectionWindow;
+import org.visualeagle.gui.connectionmanager.connectionwindow.NewConnectionWindow;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Point;

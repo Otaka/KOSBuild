@@ -1,4 +1,4 @@
-package org.visualeagle.gui.connectionManager.connectionwindow;
+package org.visualeagle.gui.connectionmanager.connectionwindow;
 
 import javax.swing.JDialog;
 import org.visualeagle.gui.mainwindow.MainWindow;

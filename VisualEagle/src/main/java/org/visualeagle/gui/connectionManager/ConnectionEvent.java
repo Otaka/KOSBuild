@@ -1,4 +1,4 @@
-package org.visualeagle.gui.connectionManager;
+package org.visualeagle.gui.connectionmanager;
 
 /**
  * @author sad

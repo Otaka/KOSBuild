@@ -1,4 +1,4 @@
-package org.visualeagle.gui.connectionManager.connectionwindow;
+package org.visualeagle.gui.connectionmanager.connectionwindow;
 
 /**
  * @author Dmitry

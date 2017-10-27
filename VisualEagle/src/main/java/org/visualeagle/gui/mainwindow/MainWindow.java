@@ -14,7 +14,7 @@ import java.io.IOException;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import org.visualeagle.gui.connectionManager.ConnectionManager;
+import org.visualeagle.gui.connectionmanager.ConnectionManager;
 import org.visualeagle.utils.GuiUtils;
 import org.visualeagle.gui.small.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.gui.logwindow.GuiLogPrinter;
