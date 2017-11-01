@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import org.visualeagle.gui.mainwindow.MainWindow;
 import org.visualeagle.gui.small.IconButton;
 import org.visualeagle.utils.ImageManager;
@@ -31,9 +32,9 @@ public class ConnectionStatusPanel extends JPanel {
         setLayout(new FlowLayout(FlowLayout.LEFT, 5, 0));
         connectDisconnectButton = createConnectDisconnectButton();
         add(connectDisconnectButton);
-        setDisconnectedStatus();
         label = new JLabel("Not connected");
         add(label);
+        setDisconnectedStatus();
         createConnectionManager();
     }
 
@@ -71,29 +72,34 @@ public class ConnectionStatusPanel extends JPanel {
     }
 
     private void buttonPressed(ActionEvent event) {
-        if (connectionManager.isConnected()) {
-            connectionManager.closeConnection();
-        } else {
-            setConnectingStatus();
-            NewConnectionWindow connectionWindow = new NewConnectionWindow();
-            connectionWindow.setLocationRelativeTo(Lookup.get().get(MainWindow.class));
-            connectionWindow.setVisible(true);
-            setDisconnectedStatus();
-        }
+        SwingUtilities.invokeLater(() -> {
+            if (connectionManager.isConnected()) {
+                connectionManager.closeConnection();
+            } else {
+                setConnectingStatus();
+                NewConnectionWindow connectionWindow = new NewConnectionWindow();
+                connectionWindow.setLocationRelativeTo(Lookup.get().get(MainWindow.class));
+                connectionWindow.setVisible(true);
+            }
+        });
+
     }
 
     private void setDisconnectedStatus() {
         connectDisconnectButton.setIcon(ImageManager.get().getImage("disconnected"));
         connectDisconnectButton.setToolTipText("Press to connect to remote KolibriOs device");
+        label.setText("Not connected");
     }
 
     private void setConnectedStatus() {
         connectDisconnectButton.setIcon(ImageManager.get().getImage("connected"));
         connectDisconnectButton.setToolTipText("Press to disconnect");
+        label.setText("Connected");
     }
 
     private void setConnectingStatus() {
         connectDisconnectButton.setIcon(ImageManager.get().getImage("connecting_1"), ImageManager.get().getImage("connecting_2"));
         connectDisconnectButton.setToolTipText("Connecting...");
+        label.setText("Connecting...");
     }
 }

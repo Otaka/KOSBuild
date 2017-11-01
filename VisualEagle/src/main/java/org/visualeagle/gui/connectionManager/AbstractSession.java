@@ -1,11 +1,10 @@
-package com.kosbuild.remoteemulator;
+package org.visualeagle.gui.connectionManager;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import org.apache.commons.io.IOUtils;
 
 /**
  * @author sad
@@ -113,4 +112,8 @@ public abstract class AbstractSession {
         closeConnection();
     }
 
+    public static interface ResultEvent<T> {
+
+        public void result(T t);
+    }
 }

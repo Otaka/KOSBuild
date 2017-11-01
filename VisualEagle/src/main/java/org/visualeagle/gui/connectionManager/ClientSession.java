@@ -1,4 +1,4 @@
-package com.kosbuild.remoteemulator;
+package org.visualeagle.gui.connectionManager;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -36,7 +36,7 @@ public class ClientSession extends AbstractSession {
         return true;
     }
 
-    protected boolean doSimpleValidation() throws IOException {
+    private boolean doSimpleValidation() throws IOException {
         int val1 = receiveInt();
         int val2 = receiveInt();
 

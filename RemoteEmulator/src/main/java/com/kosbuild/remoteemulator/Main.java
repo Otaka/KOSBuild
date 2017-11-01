@@ -287,10 +287,11 @@ public class Main {
         return serverSession;
     }
 
-    private static AbstractSession createClient(Scanner scanner) {
+    private static AbstractSession createClient(Scanner scanner) throws Exception {
         System.out.println("Please enter hostname to connect");
         String hostname = scanner.nextLine();
-
-        return null;
+        ClientSession clientSession=new ClientSession(hostname);
+        clientSession.initConnection();
+        return clientSession;
     }
 }

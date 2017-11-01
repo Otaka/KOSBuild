@@ -4,6 +4,8 @@ import javax.swing.JDialog;
 import org.visualeagle.gui.mainwindow.MainWindow;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
+import org.visualeagle.gui.connectionManager.connectionwindow.ConnectAsClientPanel;
+import org.visualeagle.gui.connectionManager.connectionwindow.ConnectAsServerPanel;
 
 /**
  * @author sad
@@ -25,13 +27,32 @@ public class NewConnectionWindow extends JDialog {
         connectionTypeChooser.setOnSelectEvent(this::onSelectConnectionType);
         add(connectionTypeChooser);
         pack();
+        setResizable(false);
+
+    }
+
+    private void removeSelectionPanel() {
+        connectionTypeChooser.setOnSelectEvent(null);
+        remove(connectionTypeChooser);
 
     }
 
     private void onSelectConnectionType(ConnectionType connectionType) {
-        connectionTypeChooser.setOnSelectEvent(null);
-        remove(connectionTypeChooser);
+        removeSelectionPanel();
         invalidate();
         repaint();
+        
+        if (connectionType == ConnectionType.CLIENT) {
+            ConnectAsClientPanel newPanel = new ConnectAsClientPanel();
+            add(newPanel);
+        } else {
+            ConnectAsServerPanel newPanel = new ConnectAsServerPanel();
+            add(newPanel);
+        }
+
+        revalidate();
+        repaint();
+        pack();
+        
     }
 }

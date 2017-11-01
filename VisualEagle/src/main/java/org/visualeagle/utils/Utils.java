@@ -6,6 +6,9 @@ import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import org.visualeagle.gui.connectionManager.AbstractSession;
 
 /**
  * @author Dmitry
@@ -90,5 +93,10 @@ public class Utils {
         }
 
         return newImage;
+    }
+    
+    private static Executor executor=Executors.newCachedThreadPool();
+    public static void runInThread(Runnable runnable){
+        executor.execute(runnable);
     }
 }

@@ -1,4 +1,4 @@
-package com.kosbuild.remoteemulator;
+package org.visualeagle.gui.connectionManager;
 
 import java.io.IOException;
 import java.net.ServerSocket;
