@@ -59,20 +59,14 @@ public class SelectConnectionTypePanel extends JPanel {
         panelCenter.add(copyAgentLabel);
         panelRight.add(clientLabel);
 
-        serverButton.setActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                onSelect.data(ConnectionType.SERVER);
-            }
+        serverButton.setActionListener((ActionEvent e) -> {
+            onSelect.data(ConnectionType.SERVER);
         });
 
         copyAgentButton.setActionListener(this::runCopyAgent);
 
-        serverButton.setActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                onSelect.data(ConnectionType.SERVER);
-            }
+        clientButton.setActionListener((ActionEvent e) -> {
+            onSelect.data(ConnectionType.CLIENT);
         });
     }
 

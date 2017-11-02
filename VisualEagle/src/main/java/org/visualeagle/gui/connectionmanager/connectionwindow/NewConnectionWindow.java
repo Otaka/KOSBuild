@@ -4,8 +4,6 @@ import javax.swing.JDialog;
 import org.visualeagle.gui.mainwindow.MainWindow;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
-import org.visualeagle.gui.connectionManager.connectionwindow.ConnectAsClientPanel;
-import org.visualeagle.gui.connectionManager.connectionwindow.ConnectAsServerPanel;
 
 /**
  * @author sad

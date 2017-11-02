@@ -1,10 +1,9 @@
-package org.visualeagle.gui.connectionManager.connectionwindow;
+package org.visualeagle.gui.connectionmanager.connectionwindow;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -12,12 +11,11 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-import org.visualeagle.gui.connectionManager.AbstractSession;
-import org.visualeagle.gui.connectionManager.ServerSession;
+import javax.swing.Timer;
 import org.visualeagle.gui.connectionmanager.ConnectionManager;
+import org.visualeagle.utils.ActorMessage;
 import org.visualeagle.utils.Lookup;
-import org.visualeagle.utils.Utils;
+import org.visualeagle.utils.MessageProcessedEvent;
 
 /**
  * @author Dmitry
@@ -27,10 +25,10 @@ public class ConnectAsServerPanel extends JPanel {
     private JLabel titleLabel;
     private JTextField portTextField;
     private JButton startServerButton;
+    private Timer timer;
 
     public ConnectAsServerPanel() {
         JPanel contentPanel = new JPanel();
-
         setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
         add(contentPanel);
 
@@ -53,11 +51,8 @@ public class ConnectAsServerPanel extends JPanel {
         titleLabel.setAlignmentX(JComponent.LEFT_ALIGNMENT);
         contentPanel.add(titleLabel);
 
-        startServerButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                startServer();
-            }
+        startServerButton.addActionListener((ActionEvent e) -> {
+            startServer();
         });
     }
 
@@ -65,7 +60,31 @@ public class ConnectAsServerPanel extends JPanel {
         return Integer.parseInt(portTextField.getText());
     }
 
+    private void stopTimer() {
+        if (timer != null) {
+            timer.stop();
+        }
+        timer = null;
+    }
+
+    private void startTimer() {
+        stopTimer();
+        timer = new Timer(500, (ActionEvent e) -> {
+            if (!isValid()) {
+                timer.stop();
+                return;
+            }
+
+            ConnectionManager connectionManager = Lookup.get().get(ConnectionManager.class);
+            titleLabel.setText(connectionManager.getStatusMessage());
+        });
+
+        timer.setRepeats(true);
+        timer.start();
+    }
+
     private void startServer() {
+        startTimer();
         int port;
         try {
             port = getPort();
@@ -74,28 +93,18 @@ public class ConnectAsServerPanel extends JPanel {
             return;
         }
 
-        Utils.runInThread(() -> {
-            try {
-                SwingUtilities.invokeLater(() -> {
-                    startServerButton.setEnabled(false);
-                    portTextField.setEnabled(false);
-                    titleLabel.setText("Waiting for incoming connection");
-                });
-
-                ServerSession serverSession = new ServerSession(port);
-                serverSession.initConnection();
-                SwingUtilities.invokeLater(() -> {
-                    titleLabel.setText("Connected");
-                    Lookup.get().get(ConnectionManager.class).setSession(serverSession);
-                });
-            } catch (Exception ex) {
-                SwingUtilities.invokeLater(() -> {
-                    titleLabel.setText("Error while waiting for connection [" + ex.getMessage() + "]");
-                    portTextField.setEnabled(true);
-                    startServerButton.setEnabled(true);
-                });
+        startServerButton.setEnabled(false);
+        portTextField.setEnabled(false);
+        ConnectionManager connectionManager = Lookup.get().get(ConnectionManager.class);
+        connectionManager.sendMessage(new ActorMessage("create_server", new ConnectionManager.CreateServerMessage(port)), (MessageProcessedEvent) (Object originalMessage, Object result, Throwable exception) -> {
+            if (exception != null) {
+                startServerButton.setEnabled(true);
+                portTextField.setEnabled(true);
+                stopTimer();
+                titleLabel.setText("Error [" + exception.getMessage() + "]");
+            } else {
+                titleLabel.setText((String) result);
             }
-        });
-
+        }, true);
     }
 }

@@ -8,7 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import org.visualeagle.gui.connectionManager.AbstractSession;
+import javax.swing.JOptionPane;
+import org.visualeagle.gui.connectionmanager.AbstractSession;
 
 /**
  * @author Dmitry
@@ -98,5 +99,9 @@ public class Utils {
     private static Executor executor=Executors.newCachedThreadPool();
     public static void runInThread(Runnable runnable){
         executor.execute(runnable);
+    }
+    
+    public static void showErrorMessage(String message){
+        JOptionPane.showMessageDialog(null, message,"Error",JOptionPane.ERROR_MESSAGE);
     }
 }

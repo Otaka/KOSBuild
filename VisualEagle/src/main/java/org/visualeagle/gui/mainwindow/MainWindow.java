@@ -15,16 +15,19 @@ import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import org.visualeagle.gui.connectionmanager.ConnectionManager;
+import org.visualeagle.gui.connectionmanager.ConnectionStatus;
 import org.visualeagle.utils.GuiUtils;
 import org.visualeagle.gui.small.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.gui.logwindow.GuiLogPrinter;
 import org.visualeagle.gui.logwindow.LogWindow;
+import org.visualeagle.gui.remotewindow.RemoteCommanderWindow;
 import org.visualeagle.project.ProjectManager;
 import org.visualeagle.project.projectloaders.KosBuildGccProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectStructure;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
+import org.visualeagle.utils.Utils;
 import org.visualeagle.utils.WindowLocationService;
 
 /**
@@ -88,7 +91,7 @@ public class MainWindow extends JFrame {
         mainMenu = new MainMenu();
         setJMenuBar(mainMenu.constructMainMenu());
 
-        Lookup.get().put(ConnectionManager.class, new ConnectionManager());
+        Lookup.get().put(ConnectionManager.class, new ConnectionManager().start());
 
         statusPanel = new StatusPanel();
         getContentPane().add(statusPanel, BorderLayout.SOUTH);
@@ -101,6 +104,28 @@ public class MainWindow extends JFrame {
         actionManager.registerAction("open_project", this::openProject);
         actionManager.registerAction("open_recent_project", this::openRecentProject);
         actionManager.registerAction("close_project", this::closeOpenedProject);
+        actionManager.registerAction("remote_commander", this::remoteCommander);
+    }
+
+    public JDesktopPane getDesktop() {
+        return desktop;
+    }
+
+    public WindowLocationService getWindowLocationService() {
+        return windowLocationService;
+    }
+
+    private void remoteCommander() {
+        ConnectionManager connectionManager = Lookup.get().get(ConnectionManager.class);
+        if (connectionManager.getConnectionStatus() != ConnectionStatus.CONNECTED) {
+            Utils.showErrorMessage("Please make connection to remote machine first");
+            return;
+        }
+
+        RemoteCommanderWindow remoteCommanderWindow = new RemoteCommanderWindow();
+        remoteCommanderWindow.pack();
+        remoteCommanderWindow.setVisible(true);
+
     }
 
     private void openProject() {

@@ -10,6 +10,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
 import javax.swing.RootPaneContainer;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 /**
  * @author Dmitry
@@ -39,12 +40,12 @@ public class WindowLocationService {
         String name = getName(frame);
         int width;
         int height;
-        if(rootComponent==null){
-            width= Toolkit.getDefaultToolkit().getScreenSize().width;
-            height= Toolkit.getDefaultToolkit().getScreenSize().height;
-        }else{
-            width=rootComponent.getWidth();
-            height=rootComponent.getHeight();
+        if (rootComponent == null) {
+            width = Toolkit.getDefaultToolkit().getScreenSize().width;
+            height = Toolkit.getDefaultToolkit().getScreenSize().height;
+        } else {
+            width = rootComponent.getWidth();
+            height = rootComponent.getHeight();
         }
         int x = Settings.getIntProperty(name + ".x", GuiUtils.parseWidthString(defaultX, width));
         int y = Settings.getIntProperty(name + ".y", GuiUtils.parseWidthString(defaultY, height));
@@ -97,12 +98,22 @@ public class WindowLocationService {
 
     public void register(RootPaneContainer frame) {
         if (frame instanceof JFrame) {
-            ((JFrame) frame).addWindowStateListener(new WindowAdapter() {
+            ComponentAdapter componentAdapter = createComponentAdapter(frame);
+            MutableObject<WindowAdapter> windowAdapter = new MutableObject<>();
+            windowAdapter.setValue(new WindowAdapter() {
                 @Override
                 public void windowStateChanged(WindowEvent e) {
                     onWindowStateChanged(frame, e);
                 }
+
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    ((JFrame) frame).removeWindowStateListener(windowAdapter.getValue());
+                    ((JFrame) frame).removeComponentListener(componentAdapter);
+                }
             });
+
+            ((JFrame) frame).addWindowStateListener(windowAdapter.getValue());
             ((JFrame) frame).addComponentListener(createComponentAdapter(frame));
         } else {
             ((JInternalFrame) frame).addComponentListener(createComponentAdapter(frame));

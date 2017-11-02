@@ -26,6 +26,8 @@ public class ServerSession extends AbstractSession {
     public boolean aquireSocket() throws IOException {
         serverSocket = new ServerSocket(port);
         connection = serverSocket.accept();
+        connection.setKeepAlive(true);
+        System.out.println("Accepted new client "+connection.getInetAddress());
         inputStream = IOUtils.buffer(connection.getInputStream());
         outputStream = IOUtils.buffer(connection.getOutputStream(), 1024);
         if (!doSimpleValidation()) {

@@ -28,7 +28,7 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         String connectionTypeString;
         while (true) {
-            System.out.println("Create server or connect to client?\n1. Create server\n2. Connect to client");
+            System.out.println("Create server or connect to client?\n1. Create server\n2. Connect to server");
             connectionTypeString = scanner.nextLine();
             if (connectionTypeString.equalsIgnoreCase("1") || connectionTypeString.equalsIgnoreCase("2")) {
                 break;
@@ -38,12 +38,15 @@ public class Main {
         }
 
         AbstractSession session;
-        if (connectionTypeString.equals("1")) {
-            session = createServer(scanner);
-        } else if (connectionTypeString.equals("2")) {
-            session = createClient(scanner);
-        } else {
-            throw new IllegalArgumentException("Wrong connection type [" + connectionTypeString + "]");
+        switch (connectionTypeString) {
+            case "1":
+                session = createServer(scanner);
+                break;
+            case "2":
+                session = createClient(scanner);
+                break;
+            default:
+                throw new IllegalArgumentException("Wrong connection type [" + connectionTypeString + "]");
         }
         new Main().mainLoop(session);
     }
@@ -51,7 +54,9 @@ public class Main {
     public void mainLoop(AbstractSession session) throws IOException {
         while (true) {
             String command = session.receiveString();
-            if (command.equalsIgnoreCase("LIST_FLDER")) {
+            if (command.equalsIgnoreCase("PING")) {
+                processPing(session);
+            } else if (command.equalsIgnoreCase("LIST_FLDER")) {
                 processListFolder(session);
             } else if (command.equalsIgnoreCase("OPENFILE_R")) {
                 openFileForReading(session);
@@ -104,6 +109,10 @@ public class Main {
         } else {
             FileUtils.copyFileToDirectory(sourceFile, destFile);
         }
+        session.sendString(OK);
+    }
+
+    private void processPing(AbstractSession session) throws IOException {
         session.sendString(OK);
     }
 
@@ -283,6 +292,7 @@ public class Main {
 
     private static AbstractSession createServer(Scanner scanner) throws Exception {
         ServerSession serverSession = new ServerSession(8081);
+        System.out.println("Started server on port 8081");
         serverSession.initConnection();
         return serverSession;
     }
@@ -290,7 +300,7 @@ public class Main {
     private static AbstractSession createClient(Scanner scanner) throws Exception {
         System.out.println("Please enter hostname to connect");
         String hostname = scanner.nextLine();
-        ClientSession clientSession=new ClientSession(hostname);
+        ClientSession clientSession = new ClientSession(hostname);
         clientSession.initConnection();
         return clientSession;
     }

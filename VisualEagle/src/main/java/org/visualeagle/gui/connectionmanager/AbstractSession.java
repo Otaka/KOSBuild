@@ -1,4 +1,4 @@
-package org.visualeagle.gui.connectionManager;
+package org.visualeagle.gui.connectionmanager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +13,8 @@ public abstract class AbstractSession {
 
     protected Socket connection;
 
+    public abstract String getStatusMessage();
+    public abstract boolean isConnected();
     public abstract void closeConnection() throws IOException;
 
     public abstract boolean aquireSocket() throws IOException;

@@ -9,18 +9,19 @@ import java.awt.event.MouseEvent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import org.visualeagle.gui.mainwindow.MainWindow;
 import org.visualeagle.gui.small.IconButton;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
+import org.visualeagle.utils.ActorMessage;
+import org.visualeagle.utils.Utils;
 
-/**
- * @author sad
- */
 public class ConnectionStatusPanel extends JPanel {
 
     private IconButton connectDisconnectButton;
     private ConnectionManager connectionManager;
+    private ConnectionStatus lastConnectionStatus;
     private JLabel label;
 
     public ConnectionStatusPanel() {
@@ -40,22 +41,31 @@ public class ConnectionStatusPanel extends JPanel {
 
     private void createConnectionManager() {
         connectionManager = Lookup.get().get(ConnectionManager.class);
-        connectionManager.addConnectionListener(new ConnectionEvent() {
-            @Override
-            public void connected() {
-                setConnectedStatus();
-            }
-
-            @Override
-            public void disconnected() {
-                setDisconnectedStatus();
-            }
-
-            @Override
-            public void connecting() {
-                setConnectingStatus();
-            }
+        int delay = 500;
+        Timer timer = new Timer(delay, (ActionEvent e) -> {
+            checkStatus();
         });
+
+        timer.setInitialDelay(20);
+        timer.setRepeats(true);
+        timer.start();
+    }
+
+    private void checkStatus() {
+        ConnectionStatus newConnectionStatus = connectionManager.getConnectionStatus();
+        if (newConnectionStatus != lastConnectionStatus) {
+            lastConnectionStatus = newConnectionStatus;
+            switch (lastConnectionStatus) {
+                case CONNECTED:
+                    setConnectedStatus();break;
+                case DISCONNECTED:
+                    setDisconnectedStatus();break;
+                case CONNECTING:
+                    setConnectingStatus();break;
+                default:
+                    throw new IllegalArgumentException("Unknow status [" + lastConnectionStatus + "]");
+            }
+        }
     }
 
     private IconButton createConnectDisconnectButton() {
@@ -73,16 +83,21 @@ public class ConnectionStatusPanel extends JPanel {
 
     private void buttonPressed(ActionEvent event) {
         SwingUtilities.invokeLater(() -> {
-            if (connectionManager.isConnected()) {
-                connectionManager.closeConnection();
+            if (connectionManager.getConnectionStatus() == ConnectionStatus.CONNECTED || connectionManager.getConnectionStatus() == ConnectionStatus.CONNECTING) {
+                connectDisconnectButton.setEnabled(false);
+                connectionManager.sendMessage(new ActorMessage("close"), (Object originalMessage, Object result, Throwable exception) -> {
+                    connectDisconnectButton.setEnabled(true);
+                    checkStatus();
+                    if (exception != null) {
+                        Utils.showErrorMessage("Cannot do disconnect [" + exception.getMessage() + "]");
+                    }
+                }, true);
             } else {
-                setConnectingStatus();
                 NewConnectionWindow connectionWindow = new NewConnectionWindow();
                 connectionWindow.setLocationRelativeTo(Lookup.get().get(MainWindow.class));
                 connectionWindow.setVisible(true);
             }
         });
-
     }
 
     private void setDisconnectedStatus() {

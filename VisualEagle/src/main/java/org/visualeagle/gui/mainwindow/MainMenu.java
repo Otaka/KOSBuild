@@ -85,6 +85,8 @@ public class MainMenu {
         projectMenu.addSeparator();
         projectMenu.add(menuList.put(createJMenuItem("Run", "run_app", "F9", "run")));
         projectMenu.add(menuList.put(createJMenuItem("Debug", "debug_app", "ctrl F9", "debug")));
+        projectMenu.addSeparator();
+        projectMenu.add(menuList.put(createJMenuItem("Remote commander", "remote_commander", null, "debug")));
         processEnableDisableRequireMenu(projectMenu, menuList);
         return projectMenu;
     }

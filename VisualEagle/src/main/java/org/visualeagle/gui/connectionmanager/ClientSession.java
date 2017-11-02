@@ -1,4 +1,4 @@
-package org.visualeagle.gui.connectionManager;
+package org.visualeagle.gui.connectionmanager;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -11,9 +11,10 @@ public class ClientSession extends AbstractSession {
 
     private String host;
     private int port;
+    private String statusMessage;
 
     public ClientSession(String host) {
-        host=host.trim();
+        host = host.trim();
         if (!host.contains(":")) {
             throw new IllegalArgumentException("Host name should be in host:port format, but found [" + host + "]");
         }
@@ -30,6 +31,7 @@ public class ClientSession extends AbstractSession {
     @Override
     public boolean aquireSocket() throws IOException {
         connection = new Socket(host, port);
+        connection.setSoTimeout(7000);
         inputStream = IOUtils.buffer(connection.getInputStream());
         outputStream = IOUtils.buffer(connection.getOutputStream(), 1024);
         doSimpleValidation();
@@ -48,6 +50,16 @@ public class ClientSession extends AbstractSession {
             return true;
         }
         connection.close();
+        return false;
+    }
+
+    @Override
+    public String getStatusMessage() {
+        return statusMessage;
+    }
+
+    @Override
+    public boolean isConnected() {
         return false;
     }
 
