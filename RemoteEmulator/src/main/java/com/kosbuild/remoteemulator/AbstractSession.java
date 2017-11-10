@@ -15,6 +15,7 @@ public abstract class AbstractSession {
     protected Socket connection;
 
     public abstract void closeConnection() throws IOException;
+    public abstract void closeClient() throws IOException;
 
     public abstract boolean aquireSocket() throws IOException;
 
@@ -110,7 +111,7 @@ public abstract class AbstractSession {
     public void closeWithSendingMessage(String message) throws IOException {
         sendString("0");
         sendString(message);
-        closeConnection();
+        closeClient();
     }
 
 }

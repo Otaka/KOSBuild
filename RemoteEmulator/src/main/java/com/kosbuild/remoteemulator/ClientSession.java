@@ -13,7 +13,7 @@ public class ClientSession extends AbstractSession {
     private int port;
 
     public ClientSession(String host) {
-        host=host.trim();
+        host = host.trim();
         if (!host.contains(":")) {
             throw new IllegalArgumentException("Host name should be in host:port format, but found [" + host + "]");
         }
@@ -24,15 +24,24 @@ public class ClientSession extends AbstractSession {
 
     @Override
     public void closeConnection() throws IOException {
+        if (connection != null) {
+            connection.close();
+        }
+    }
 
+    @Override
+    public void closeClient() throws IOException {
+        connection.close();
     }
 
     @Override
     public boolean aquireSocket() throws IOException {
         connection = new Socket(host, port);
+        
         inputStream = IOUtils.buffer(connection.getInputStream());
         outputStream = IOUtils.buffer(connection.getOutputStream(), 1024);
         doSimpleValidation();
+        System.out.println("Connected to server ["+host+":"+port+"]");
         return true;
     }
 
