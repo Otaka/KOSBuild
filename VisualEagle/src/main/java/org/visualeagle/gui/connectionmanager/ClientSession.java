@@ -25,7 +25,9 @@ public class ClientSession extends AbstractSession {
 
     @Override
     public void closeConnection() throws IOException {
-
+        if(connection!=null){
+            connection.close();
+        }
     }
 
     @Override
@@ -60,7 +62,11 @@ public class ClientSession extends AbstractSession {
 
     @Override
     public boolean isConnected() {
-        return false;
+        if(connection!=null&&connection.isConnected()){
+            return true;
+        }else{
+            return false;
+        }
     }
 
 }

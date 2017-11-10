@@ -1,8 +1,11 @@
 package org.visualeagle.gui.connectionmanager;
 
+import java.io.IOException;
 import java.util.Timer;
+import java.util.TimerTask;
 import org.visualeagle.utils.BaseActor;
 import org.visualeagle.utils.ActorMessage;
+import org.visualeagle.utils.MessageProcessedEvent;
 
 /**
  * @author sad
@@ -11,7 +14,20 @@ public class ConnectionManager extends BaseActor<ActorMessage> {
 
     private AbstractSession session;
     private ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
-    private Timer checkAliveTimer = new Timer();
+    private Timer checkAliveTimer = new Timer(true);
+
+    public ConnectionManager() {
+        schedulePingTimer();
+    }
+
+    private void schedulePingTimer() {
+        checkAliveTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                sendPingMessage();
+            }
+        }, 4000, 4000);
+    }
 
     public ConnectionStatus getConnectionStatus() {
         if (session != null) {
@@ -19,6 +35,7 @@ public class ConnectionManager extends BaseActor<ActorMessage> {
                 return ConnectionStatus.CONNECTED;
             }
         }
+
         return connectionStatus;
     }
 
@@ -37,14 +54,10 @@ public class ConnectionManager extends BaseActor<ActorMessage> {
     @Override
     protected Object processMessage(ActorMessage message) throws Exception {
         switch (message.getCommand()) {
+            case "ping":
+                return ping();
             case "close":
-                if (session != null) {
-                    connectionStatus = ConnectionStatus.CONNECTING;
-                    session.closeConnection();
-                    connectionStatus = ConnectionStatus.DISCONNECTED;
-                    session = null;
-                }
-
+                closeConnection();
                 break;
             case "create_server":
                 return createServer((CreateServerMessage) message.getData());
@@ -53,6 +66,37 @@ public class ConnectionManager extends BaseActor<ActorMessage> {
         }
 
         return null;
+    }
+
+    private void sendPingMessage() {
+        if (connectionStatus == ConnectionStatus.CONNECTED && session != null && session.isConnected()) {
+            sendMessage(new ActorMessage("ping"), (MessageProcessedEvent) (Object originalMessage, Object result, Throwable exception) -> {
+                if (exception != null) {
+                    try {
+                        closeConnection();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }, false, 5000);
+        }
+    }
+
+    private String ping() throws IOException {
+        if (connectionStatus == ConnectionStatus.CONNECTED && session != null && session.isConnected()) {
+            session.sendString("PING");
+            return session.receiveString();
+        }
+        return null;
+    }
+
+    private void closeConnection() throws IOException {
+        if (session != null) {
+            connectionStatus = ConnectionStatus.CONNECTING;
+            session.closeConnection();
+            connectionStatus = ConnectionStatus.DISCONNECTED;
+            session = null;
+        }
     }
 
     private String createServer(CreateServerMessage message) throws Exception {
@@ -66,9 +110,9 @@ public class ConnectionManager extends BaseActor<ActorMessage> {
     private String connectToClient(ConnectToServerMessage message) throws Exception {
         connectionStatus = ConnectionStatus.CONNECTING;
         ClientSession clientSession = new ClientSession(message.hostname);
-        try{
-        clientSession.initConnection();
-        }catch(Exception ex){
+        try {
+            clientSession.initConnection();
+        } catch (Exception ex) {
             connectionStatus = ConnectionStatus.DISCONNECTED;
             throw ex;
         }

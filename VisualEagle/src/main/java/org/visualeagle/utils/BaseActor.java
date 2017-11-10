@@ -16,7 +16,7 @@ public abstract class BaseActor<T> {
     private ArrayBlockingQueue<MessageWrapper> messageQueue;
     private Thread thread;
     private static Timer timeoutChecker = new Timer("actorTimeoutChecker");
-
+    
     public BaseActor() {
         this(200);
     }

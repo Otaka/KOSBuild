@@ -101,8 +101,7 @@ public class DirectoryChooser {
     }
 
     private CheckAllowToSelectCallback createDefaultCheckAllowToSelectCallback() {
-        return (TreeElement treeElement) -> true //default check that always returns true
-        ;
+        return (TreeElement treeElement) -> true; //default check that always returns true
     }
 
     private JPanel createContentPanel() {

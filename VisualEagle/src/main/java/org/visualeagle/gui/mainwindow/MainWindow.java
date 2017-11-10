@@ -25,6 +25,7 @@ import org.visualeagle.project.ProjectManager;
 import org.visualeagle.project.projectloaders.KosBuildGccProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectStructure;
+import org.visualeagle.utils.ConfigNames;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
 import org.visualeagle.utils.Utils;
@@ -215,7 +216,8 @@ public class MainWindow extends JFrame {
                 projectNavigationWindow.loadProject(projectStructure);
             }
 
-            Lookup.get().get(ProjectManager.class).setCurrentProject(projectStructure);;
+            Lookup.get().get(ProjectManager.class).setCurrentProject(projectStructure);
+            Lookup.get().put(ConfigNames.PROJECT_IS_LOADED, Boolean.TRUE);
         } catch (Exception ex) {
             ex.printStackTrace();
             throw new RuntimeException(ex);
@@ -229,6 +231,7 @@ public class MainWindow extends JFrame {
 
         projectNavigationWindow.closeCurrentProject();
         Lookup.get().get(ProjectManager.class).closeCurrentProject();
+        Lookup.get().put(ConfigNames.PROJECT_IS_LOADED, Boolean.FALSE);
         return true;
     }
 }

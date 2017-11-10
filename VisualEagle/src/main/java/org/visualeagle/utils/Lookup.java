@@ -34,6 +34,14 @@ public class Lookup {
         return strMap.get(key);
     }
 
+    public Object get(String key, Object defaultObject) {
+        if (strMap.containsKey(key)) {
+            return strMap.get(key);
+        } else {
+            return defaultObject;
+        }
+    }
+
     public void fire(Object obj) {
         put(obj);
     }

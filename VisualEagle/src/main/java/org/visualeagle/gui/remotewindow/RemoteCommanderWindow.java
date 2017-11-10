@@ -18,5 +18,6 @@ public class RemoteCommanderWindow extends JDialog{
 
     private void init() {
         setIconImage(ImageManager.get().getImage("eagle"));
+        setLocationRelativeTo(Lookup.get().get(MainWindow.class));
     }
 }
