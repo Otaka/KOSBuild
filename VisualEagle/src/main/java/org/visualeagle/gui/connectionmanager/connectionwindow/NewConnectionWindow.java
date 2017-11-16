@@ -22,7 +22,7 @@ public class NewConnectionWindow extends JDialog {
         setTitle("Connection wizard");
         setLocationRelativeTo(Lookup.get().get(MainWindow.class));
         connectionTypeChooser = new SelectConnectionTypePanel();
-        connectionTypeChooser.setOnSelectEvent(this::onSelectConnectionType);
+        connectionTypeChooser.setOnSelectEvent(this::onStartConnection);
         add(connectionTypeChooser);
         pack();
         setResizable(false);
@@ -35,22 +35,14 @@ public class NewConnectionWindow extends JDialog {
 
     }
 
-    private void onSelectConnectionType(ConnectionType connectionType) {
+    private void onStartConnection(String value) {
         removeSelectionPanel();
         invalidate();
         repaint();
-        
-        if (connectionType == ConnectionType.CLIENT) {
-            ConnectAsClientPanel newPanel = new ConnectAsClientPanel();
-            add(newPanel);
-        } else {
-            ConnectAsServerPanel newPanel = new ConnectAsServerPanel();
-            add(newPanel);
-        }
-
+        ConnectAsServerPanel newPanel = new ConnectAsServerPanel();
+        add(newPanel);
         revalidate();
         repaint();
         pack();
-        
     }
 }

@@ -5,9 +5,11 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import org.visualeagle.gui.mainwindow.MainWindow;
@@ -35,8 +37,21 @@ public class ConnectionStatusPanel extends JPanel {
         add(connectDisconnectButton);
         label = new JLabel("Not connected");
         add(label);
+        addPopupMenu();
         setDisconnectedStatus();
         createConnectionManager();
+
+    }
+
+    private void addPopupMenu() {
+        connectDisconnectButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON2) {
+                    JPopupMenu popupMenu=new JPopupMenu();
+                }
+            }
+        });
     }
 
     private void createConnectionManager() {
@@ -57,11 +72,14 @@ public class ConnectionStatusPanel extends JPanel {
             lastConnectionStatus = newConnectionStatus;
             switch (lastConnectionStatus) {
                 case CONNECTED:
-                    setConnectedStatus();break;
+                    setConnectedStatus();
+                    break;
                 case DISCONNECTED:
-                    setDisconnectedStatus();break;
+                    setDisconnectedStatus();
+                    break;
                 case CONNECTING:
-                    setConnectingStatus();break;
+                    setConnectingStatus();
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknow status [" + lastConnectionStatus + "]");
             }

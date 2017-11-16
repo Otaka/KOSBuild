@@ -13,28 +13,34 @@ public class ServerSession extends AbstractSession {
     private AsyncServerSocket serverSocket;
     private int port;
     private String statusMessage;
-    private boolean connected = false;
+    private ConnectionStatus connectionStatus = ConnectionStatus.DISCONNECTED;
 
     public ServerSession(int port) {
         this.port = port;
     }
 
     @Override
-    public void closeConnection() throws IOException {
+    public void closeCurrentConnection() throws IOException {
         try {
-            connected = false;
+            connectionStatus = ConnectionStatus.DISCONNECTED;
             statusMessage = "Connection closing";
-            serverSocket.stop();
+            if (connection != null) {
+                connection.close();
+            }
             statusMessage = "Connection closed";
+
         } catch (Exception ex) {
             ex.printStackTrace();
             statusMessage = "Exception while closing [" + ex.getMessage() + "]";
         }
+
+        connectionStatus = ConnectionStatus.CONNECTING;
+        statusMessage = "Waiting for new connection";
     }
 
     @Override
-    public boolean isConnected() {
-        return connected;
+    public ConnectionStatus getConnectionStatus() {
+        return connectionStatus;
     }
 
     @Override
@@ -44,19 +50,20 @@ public class ServerSession extends AbstractSession {
 
     @Override
     public boolean aquireSocket() throws IOException {
-        connected = false;
+        connectionStatus = ConnectionStatus.CONNECTING;
         statusMessage = "Waiting for incoming connection";
         serverSocket = new AsyncServerSocket(port, (Socket socket) -> {
             try {
-                connected = false;
+                connection = socket;
                 inputStream = IOUtils.buffer(socket.getInputStream());
                 outputStream = IOUtils.buffer(socket.getOutputStream(), 1024);
                 if (!doSimpleValidation()) {
                     statusMessage = "Connected client [" + socket.getInetAddress() + "] but failed validation";
+                    connectionStatus = ConnectionStatus.DISCONNECTED;
                     closeWithSendingMessage("Authentication error");
                 } else {
                     sendString("1");
-                    connected = true;
+                    connectionStatus = ConnectionStatus.CONNECTED;
                     statusMessage = "Connected client [" + socket.getInetAddress() + "]";
                 }
             } catch (Exception ex) {

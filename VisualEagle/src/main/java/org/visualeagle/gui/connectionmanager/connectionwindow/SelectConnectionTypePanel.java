@@ -4,7 +4,6 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -19,33 +18,26 @@ import org.visualeagle.utils.ReturnCallback;
  */
 public class SelectConnectionTypePanel extends JPanel {
 
-    private ReturnCallback<ConnectionType> onSelect;
+    private ReturnCallback<String> onSelect;
 
     public SelectConnectionTypePanel() {
         setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
         JPanel panelLeft = new JPanel();
         panelLeft.setLayout(new BoxLayout(panelLeft, BoxLayout.Y_AXIS));
 
-        JPanel panelCenter = new JPanel();
-        panelCenter.setLayout(new BoxLayout(panelCenter, BoxLayout.Y_AXIS));
-
         JPanel panelRight = new JPanel();
         panelRight.setLayout(new BoxLayout(panelRight, BoxLayout.Y_AXIS));
 
         add(panelLeft);
-        add(panelCenter);
         add(panelRight);
 
         IconButton serverButton = new IconButton(ImageManager.get().getImage("pictureCreateServer"));
         serverButton.setPreferredSize(new Dimension(100, 100));
         IconButton copyAgentButton = new IconButton(ImageManager.get().getImage("pictureCopyAgent"));
         copyAgentButton.setPreferredSize(new Dimension(100, 100));
-        IconButton clientButton = new IconButton(ImageManager.get().getImage("pictureConnectToRemoteServer"));
-        clientButton.setPreferredSize(new Dimension(100, 100));
 
         panelLeft.add(serverButton);
-        panelCenter.add(copyAgentButton);
-        panelRight.add(clientButton);
+        panelRight.add(copyAgentButton);
 
         JLabel serverLabel = new JLabel("Create server");
         serverLabel.setAlignmentX(JComponent.CENTER_ALIGNMENT);
@@ -56,27 +48,23 @@ public class SelectConnectionTypePanel extends JPanel {
         JLabel clientLabel = new JLabel("Connect to server");
         clientLabel.setAlignmentX(JComponent.CENTER_ALIGNMENT);
         panelLeft.add(serverLabel);
-        panelCenter.add(copyAgentLabel);
+        panelRight.add(copyAgentLabel);
         panelRight.add(clientLabel);
 
         serverButton.setActionListener((ActionEvent e) -> {
-            onSelect.data(ConnectionType.SERVER);
+            onSelect.data(null);
         });
 
         copyAgentButton.setActionListener(this::runCopyAgent);
-
-        clientButton.setActionListener((ActionEvent e) -> {
-            onSelect.data(ConnectionType.CLIENT);
-        });
     }
 
     private void runCopyAgent(ActionEvent e) {
-        Window window=SwingUtilities.getWindowAncestor(this);
-        CopyAgentDialog copyAgentDialog=new CopyAgentDialog(window);
+        Window window = SwingUtilities.getWindowAncestor(this);
+        CopyAgentDialog copyAgentDialog = new CopyAgentDialog(window);
         copyAgentDialog.setVisible(true);
     }
 
-    public SelectConnectionTypePanel setOnSelectEvent(ReturnCallback<ConnectionType> onSelect) {
+    public SelectConnectionTypePanel setOnSelectEvent(ReturnCallback<String> onSelect) {
         this.onSelect = onSelect;
         return this;
     }

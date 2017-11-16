@@ -124,7 +124,6 @@ public class MainWindow extends JFrame {
         }
 
         RemoteCommanderWindow remoteCommanderWindow = new RemoteCommanderWindow();
-        remoteCommanderWindow.pack();
         remoteCommanderWindow.setVisible(true);
 
     }

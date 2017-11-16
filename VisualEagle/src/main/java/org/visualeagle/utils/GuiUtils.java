@@ -1,6 +1,7 @@
 package org.visualeagle.utils;
 
 import java.awt.Component;
+import java.awt.Toolkit;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +16,38 @@ public class GuiUtils {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public static int parseWidthString(String value, Component rootComponent) {
+        int maxWidth;
+        if (rootComponent == null) {
+            maxWidth = Toolkit.getDefaultToolkit().getScreenSize().width;
+        } else {
+            maxWidth = rootComponent.getWidth();
+        }
+        if (value.endsWith("%")) {
+            value = StringUtils.removeEnd(value, "%");
+            int percentValue = (int) (Integer.parseInt(value) / 100.0f * maxWidth);
+            return percentValue;
+        } else {
+            return Integer.parseInt(value);
+        }
+    }
+
+    public static int parseHeightString(String value, Component rootComponent) {
+        int maxHeight;
+        if (rootComponent == null) {
+            maxHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
+        } else {
+            maxHeight = rootComponent.getHeight();
+        }
+        if (value.endsWith("%")) {
+            value = StringUtils.removeEnd(value, "%");
+            int percentValue = (int) (Integer.parseInt(value) / 100.0f * maxHeight);
+            return percentValue;
+        } else {
+            return Integer.parseInt(value);
         }
     }
 

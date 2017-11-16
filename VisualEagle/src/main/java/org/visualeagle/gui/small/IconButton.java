@@ -21,7 +21,7 @@ public class IconButton extends JPanel {
     private Color backgroundColor;
     private Color borderColor;
     private boolean selected = false;
-    private boolean pressed=false;
+    private boolean pressed = false;
     private ActionListener actionListener;
     private Timer animationTimer;
     private int animationFrameIndex = 0;
@@ -58,21 +58,25 @@ public class IconButton extends JPanel {
 
             @Override
             public void mousePressed(MouseEvent e) {
-                pressed=true;
-                repaint();
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    pressed = true;
+                    repaint();
+                }
             }
+
             @Override
             public void mouseReleased(MouseEvent e) {
-                pressed=false;
+                pressed = false;
                 repaint();
             }
- 
-            
+
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (isEnabled()) {
-                    if (actionListener != null) {
-                        actionListener.actionPerformed(new ActionEvent(IconButton.this, 0, "click"));
+                    if (e.getButton() == MouseEvent.BUTTON1) {
+                        if (actionListener != null) {
+                            actionListener.actionPerformed(new ActionEvent(IconButton.this, 0, "click"));
+                        }
                     }
                 }
             }
@@ -129,9 +133,9 @@ public class IconButton extends JPanel {
     public void paint(Graphics g) {
         super.paint(g);
         if (selected) {
-            Color background=backgroundColor;
-            if(pressed){
-                background=background.darker().darker();
+            Color background = backgroundColor;
+            if (pressed) {
+                background = background.darker().darker();
             }
             g.setColor(background);
             g.fillRect(1, 1, getWidth() - 2, getHeight() - 2);
