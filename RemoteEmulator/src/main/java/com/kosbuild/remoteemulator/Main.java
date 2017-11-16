@@ -30,17 +30,21 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         AbstractSession session;
         session = createClient(scanner);
+        int counter=0;
         while (true) {
             try {
                 session.initConnection();
                 new Main().mainLoop(session);
             }catch(ConnectException ex){
-                System.out.println("Cannot connect to server ");
+                if(counter==0|| counter%10==0){
+                    System.out.println("Cannot connect to server ");
+                }
             }catch (Exception ex) {
                 ex.printStackTrace();
                 session.closeConnection();
             }
-            Thread.sleep(5000);
+            Thread.sleep(2000);
+            counter++;
         }
     }
 
