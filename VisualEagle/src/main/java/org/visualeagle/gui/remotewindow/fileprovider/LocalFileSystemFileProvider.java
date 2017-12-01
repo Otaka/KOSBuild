@@ -11,6 +11,10 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class LocalFileSystemFileProvider extends AbstractFileProvider {
 
+    public LocalFileSystemFileProvider() {
+        setCurrentFolder(null);
+    }
+
     @Override
     public List<RFile> listFiles(RFile folder) {
         if (!folder.isDirectory()) {
@@ -30,9 +34,9 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     public List<RFile> listRoots() {
         List<RFile> roots = new ArrayList<>();
         for (File root : File.listRoots()) {
-            String rootName=root.getPath();
-            rootName=StringUtils.removeEnd(root.getPath(),"\\");//fix for windows
-            roots.add(new RFile(null,rootName , root.length(), root.isDirectory(), root.lastModified()));
+            String rootName = root.getPath();
+            rootName = StringUtils.removeEnd(root.getPath(), "\\");//fix for windows
+            roots.add(new RFile(null, rootName, root.length(), root.isDirectory(), root.lastModified(), this));
         }
 
         return roots;
@@ -45,7 +49,7 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     }
 
     private RFile createRFileFromFile(File file) {
-        RFile f = new RFile(file.getParent(), file.getName(), file.length(), file.isDirectory(), file.lastModified());
+        RFile f = new RFile(file.getParent(), file.getName(), file.length(), file.isDirectory(), file.lastModified(), this);
         return f;
     }
 

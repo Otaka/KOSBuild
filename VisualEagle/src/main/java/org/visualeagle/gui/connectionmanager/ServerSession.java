@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import org.apache.commons.io.IOUtils;
 import org.visualeagle.utils.AsyncServerSocket;
+import org.visualeagle.utils.Lookup;
 
 /**
  * @author sad
@@ -28,7 +29,7 @@ public class ServerSession extends AbstractSession {
                 connection.close();
             }
             statusMessage = "Connection closed";
-
+            Lookup.get().put("connectedClient", Boolean.FALSE);
         } catch (Exception ex) {
             ex.printStackTrace();
             statusMessage = "Exception while closing [" + ex.getMessage() + "]";
@@ -57,6 +58,7 @@ public class ServerSession extends AbstractSession {
                 connection = socket;
                 inputStream = IOUtils.buffer(socket.getInputStream());
                 outputStream = IOUtils.buffer(socket.getOutputStream(), 1024);
+                
                 if (!doSimpleValidation()) {
                     statusMessage = "Connected client [" + socket.getInetAddress() + "] but failed validation";
                     connectionStatus = ConnectionStatus.DISCONNECTED;
@@ -65,6 +67,7 @@ public class ServerSession extends AbstractSession {
                     sendString("1");
                     connectionStatus = ConnectionStatus.CONNECTED;
                     statusMessage = "Connected client [" + socket.getInetAddress() + "]";
+                    Lookup.get().put("connectedClient", Boolean.TRUE);
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();

@@ -12,8 +12,9 @@ public class RFile {
     private long size;
     private boolean directory;
     private long lastModified;
+    private AbstractFileProvider fileProvider;
 
-    public RFile(String parentPath, String name, long size, boolean isDirectory, long lastModified) {
+    public RFile(String parentPath, String name, long size, boolean isDirectory, long lastModified, AbstractFileProvider fileProvider) {
         this.parentPath = parentPath;
         if (this.parentPath != null) {
             this.parentPath = this.parentPath.replace('\\', '/').trim();
@@ -23,6 +24,11 @@ public class RFile {
         this.size = size;
         this.directory = isDirectory;
         this.lastModified = lastModified;
+        this.fileProvider = fileProvider;
+    }
+
+    public AbstractFileProvider getFileProvider() {
+        return fileProvider;
     }
 
     public String getParentPath() {

@@ -7,6 +7,7 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import org.visualeagle.gui.mainwindow.MainWindow;
+import org.visualeagle.gui.remotewindow.fileprovider.FileSystemType;
 import org.visualeagle.gui.remotewindow.fileprovider.LocalFileSystemFileProvider;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Lookup;
@@ -37,8 +38,8 @@ public class RemoteCommanderWindow extends JDialog {
         filePanelContainer.add(leftPanel);
         filePanelContainer.add(rightPanel);
         SwingUtilities.invokeLater(() -> {
-            leftPanel.setFileProvider(new LocalFileSystemFileProvider());
-            rightPanel.setFileProvider(new LocalFileSystemFileProvider());
+            leftPanel.changeFileProvider(FileSystemType.LOCAL);
+            rightPanel.changeFileProvider(FileSystemType.LOCAL);
         });
 
         add(filePanelContainer, BorderLayout.CENTER);
