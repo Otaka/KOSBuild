@@ -1,26 +1,26 @@
-package com.asockets;
+package com.asyncsockets;
 
 import java.net.InetAddress;
 
 /**
  * @author sad
  */
-public class AClientSocket {
+public class AsyncClientSocket {
 
-    private ASocketsManager socketsManager;
+    private SocketsManager socketsManager;
     private DataEvent dataEvent;
     private InetAddress inetAddress;
     private int port;
-    private ASocketHandler socketHandler;
+    private SocketHandler socketHandler;
 
-    AClientSocket(ASocketHandler socketHandler, ASocketsManager socketsManager, InetAddress inetAddress, int port) {
+    AsyncClientSocket(SocketHandler socketHandler, SocketsManager socketsManager, InetAddress inetAddress, int port) {
         this.socketsManager = socketsManager;
         this.inetAddress = inetAddress;
         this.port = port;
         this.socketHandler = socketHandler;
     }
 
-    public ASocketHandler getSocketHandler() {
+    public SocketHandler getSocketHandler() {
         return socketHandler;
     }
 

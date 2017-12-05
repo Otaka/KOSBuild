@@ -1,4 +1,4 @@
-package com.asockets;
+package com.asyncsockets;
 
 
 /**
@@ -7,9 +7,9 @@ package com.asockets;
 public class Request {
 
     private Message message;
-    private ASocketHandler socketHandler;
+    private SocketHandler socketHandler;
 
-    public Request(Message message, ASocketHandler socketHandler) {
+    public Request(Message message, SocketHandler socketHandler) {
         this.message = message;
         this.socketHandler = socketHandler;
     }

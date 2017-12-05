@@ -1,5 +1,13 @@
 package com.asockets;
 
+import com.asyncsockets.SocketsManager;
+import com.asyncsockets.AsyncServerSocket;
+import com.asyncsockets.ListenableFutureTaskWithData;
+import com.asyncsockets.DataEvent;
+import com.asyncsockets.AsyncClientSocket;
+import com.asyncsockets.ConnectionEvent;
+import com.asyncsockets.Request;
+import com.asyncsockets.SocketHandler;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -11,11 +19,11 @@ import org.junit.Test;
  *
  * @author sad
  */
-public class ASocketsManagerTest {
+public class SocketsManagerTest {
 
     private static boolean finishFlag;
 
-    public ASocketsManagerTest() {
+    public SocketsManagerTest() {
     }
 
     @Before
@@ -24,13 +32,13 @@ public class ASocketsManagerTest {
 
     @Test
     public void testStart() throws UnknownHostException, IOException, InterruptedException {
-        ASocketsManager serverSocketManager = new ASocketsManager();
+        SocketsManager serverSocketManager = new SocketsManager();
         serverSocketManager.start();
 
-        AServerSocket serverSocket = serverSocketManager.createServerSocket(8090);
+        AsyncServerSocket serverSocket = serverSocketManager.createServerSocket(8090);
         serverSocket.setConnectionEvent(new ConnectionEvent() {
             @Override
-            public void clientConnected(ASocketHandler socketHandler) {
+            public void clientConnected(SocketHandler socketHandler) {
                 System.out.println("Client connected [" + socketHandler.getRemoteAddress() + "]");
                 try {
                     Request result = (Request) socketHandler.writeWithExpectingResult("1 hello client".getBytes(), -1, 2000, null, null).get();
@@ -45,17 +53,17 @@ public class ASocketsManagerTest {
             }
 
             @Override
-            public void clientDisconnected(ASocketHandler socketHandler) {
+            public void clientDisconnected(SocketHandler socketHandler) {
                 System.out.println("Client disconnected");
             }
         });
         serverSocket.start();
-        ASocketsManager clientSocketManager = new ASocketsManager();
+        SocketsManager clientSocketManager = new SocketsManager();
         clientSocketManager.start();
-        AClientSocket clientSocket = clientSocketManager.createClientSocket(InetAddress.getLocalHost(), 8090);
+        AsyncClientSocket clientSocket = clientSocketManager.createClientSocket(InetAddress.getLocalHost(), 8090);
         clientSocket.setDataEvent(new DataEvent() {
             @Override
-            public void dataArrived(ASocketHandler socket, Request request) throws IOException {
+            public void dataArrived(SocketHandler socket, Request request) throws IOException {
                 String val = new String(request.getBytes());
                 String text = "2[" + val + "]";
                 System.out.println(text);

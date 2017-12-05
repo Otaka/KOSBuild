@@ -1,4 +1,4 @@
-package com.asockets;
+package com.asyncsockets;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -12,15 +12,15 @@ import java.util.concurrent.Executors;
 /**
  * @author sad
  */
-public class ASocketsManager {
+public class SocketsManager {
 
-    private List<ASocketHandler> socketHandlers = new ArrayList<>();
+    private List<SocketHandler> socketHandlers = new ArrayList<>();
     private Thread socketThread;
-    private List<ASocketHandler> socketsToAdd = Collections.synchronizedList(new ArrayList<>());
+    private List<SocketHandler> socketsToAdd = Collections.synchronizedList(new ArrayList<>());
     private ConnectionEvent connectionEvent;
     private static Executor eventsExecutor = Executors.newCachedThreadPool();
 
-    public ASocketsManager() {
+    public SocketsManager() {
         eventsExecutor = Executors.newCachedThreadPool((Runnable r) -> {
             Thread t = Executors.defaultThreadFactory().newThread(r);
             t.setDaemon(true);
@@ -32,20 +32,20 @@ public class ASocketsManager {
         this.connectionEvent = connectionEvent;
     }
 
-    public AServerSocket createServerSocket(int port) {
-        AServerSocket serverSocket = new AServerSocket(this, port);
+    public AsyncServerSocket createServerSocket(int port) {
+        AsyncServerSocket serverSocket = new AsyncServerSocket(this, port);
         return serverSocket;
     }
 
-    public AClientSocket createClientSocket(InetAddress inetAddress, int port) throws IOException {
+    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port) throws IOException {
         Socket socket = new Socket(inetAddress, port);
-        ASocketHandler socketHandler = acceptSocket(socket, false);
-        AClientSocket clientSocket = new AClientSocket(socketHandler, this, inetAddress, port);
+        SocketHandler socketHandler = acceptSocket(socket, false);
+        AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, this, inetAddress, port);
         return clientSocket;
     }
 
-    ASocketHandler acceptSocket(Socket socket, boolean belongToServer) throws IOException {
-        ASocketHandler socketHandler = new ASocketHandler(socket);
+    SocketHandler acceptSocket(Socket socket, boolean belongToServer) throws IOException {
+        SocketHandler socketHandler = new SocketHandler(socket);
         socketHandler.setBelongToServer(belongToServer);
         socketsToAdd.add(socketHandler);
         return socketHandler;
@@ -77,7 +77,7 @@ public class ASocketsManager {
 
         for (int i = 0; i < socketHandlers.size(); i++) {
             try {
-                ASocketHandler sh = socketHandlers.get(i);
+                SocketHandler sh = socketHandlers.get(i);
                 if (sh.process()) {
                     emptyLoop = false;
                     lastProcessTime = System.currentTimeMillis();
@@ -98,7 +98,7 @@ public class ASocketsManager {
     private void addWaitingSockets() {
         if (!socketsToAdd.isEmpty()) {
             while (!socketsToAdd.isEmpty()) {
-                ASocketHandler handler = socketsToAdd.remove(0);
+                SocketHandler handler = socketsToAdd.remove(0);
                 if (handler != null) {
                     socketHandlers.add(handler);
                     if (handler.isBelongToServer()) {

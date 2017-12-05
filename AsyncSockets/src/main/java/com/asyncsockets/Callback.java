@@ -1,6 +1,6 @@
-package com.asockets;
+package com.asyncsockets;
 
-import com.asyncsockets.*;
+
 
 /**
  * @author sad

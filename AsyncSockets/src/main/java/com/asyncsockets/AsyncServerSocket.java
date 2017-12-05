@@ -1,4 +1,4 @@
-package com.asockets;
+package com.asyncsockets;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -8,14 +8,14 @@ import java.net.SocketException;
 /**
  * @author sad
  */
-public class AServerSocket {
+public class AsyncServerSocket {
 
     private int port;
     private Thread serverAcceptThread;
     private ServerSocket serverSocket;
-    private ASocketsManager socketManager;
+    private SocketsManager socketManager;
 
-    AServerSocket(ASocketsManager socketManager, int port) {
+    AsyncServerSocket(SocketsManager socketManager, int port) {
         this.port = port;
         this.socketManager = socketManager;
     }

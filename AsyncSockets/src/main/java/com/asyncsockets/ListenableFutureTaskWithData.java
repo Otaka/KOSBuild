@@ -1,6 +1,6 @@
-package com.asockets;
+package com.asyncsockets;
 
-import com.asyncsockets.*;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 

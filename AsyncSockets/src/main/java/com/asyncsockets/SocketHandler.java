@@ -1,4 +1,4 @@
-package com.asockets;
+package com.asyncsockets;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author sad
  */
-public class ASocketHandler {
+public class SocketHandler {
 
     private boolean belongToServer = false;
     private Socket socket;
@@ -30,7 +30,7 @@ public class ASocketHandler {
     private static AtomicInteger requestIdGenerator = new AtomicInteger(0);
     private Executor executor = Executors.newCachedThreadPool();
 
-    public ASocketHandler(Socket socket) throws IOException {
+    public SocketHandler(Socket socket) throws IOException {
         this.socket = socket;
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
@@ -66,8 +66,8 @@ public class ASocketHandler {
                 if (dataArrivedCallback != null) {
                     executor.execute(() -> {
                         try {
-                            Request response = new Request(message, ASocketHandler.this);
-                            dataArrivedCallback.dataArrived(ASocketHandler.this, response);
+                            Request response = new Request(message, SocketHandler.this);
+                            dataArrivedCallback.dataArrived(SocketHandler.this, response);
                         } catch (IOException ex) {
                             ex.printStackTrace();
                         }
