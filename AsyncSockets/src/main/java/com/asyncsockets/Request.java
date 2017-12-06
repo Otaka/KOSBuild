@@ -25,4 +25,8 @@ public class Request {
     public ListenableFutureTaskWithData writeInResponseWithExpectingResult(byte[] buffer, long timeout, Callback onFinish, Callback onError) {
         return socketHandler.writeWithExpectingResult(buffer,message.getMessageId(),timeout, onFinish, onError);
     }
+    
+    public String getResponseAsString(){
+        return new String(message.getBuffer());
+    }
 }

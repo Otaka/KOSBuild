@@ -1,5 +1,6 @@
 package com.asyncsockets;
 
+import com.asyncsockets.exceptions.AsyncSocketTimeout;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,7 +12,6 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -25,10 +25,11 @@ public class SocketHandler {
     private OutputStream outputStream;
     private byte[] tempIntByteBuffer = new byte[4];
     private List<WaitingFuture> waitingForResponseFutures = new ArrayList<>();
+    private Queue<WaitingFuture> waitingFuturesToAdd = new ArrayBlockingQueue<WaitingFuture>(200);
     private Queue<ListenableFutureTask> tasksQueue = new ArrayBlockingQueue<ListenableFutureTask>(100);
     private DataEvent dataArrivedCallback;
     private static AtomicInteger requestIdGenerator = new AtomicInteger(0);
-    private Executor executor = Executors.newCachedThreadPool();
+    private static Executor executor = SocketsManager.eventsExecutor;
 
     public SocketHandler(Socket socket) throws IOException {
         this.socket = socket;
@@ -57,6 +58,8 @@ public class SocketHandler {
     }
 
     public boolean process() throws IOException {
+        addWaitingFuturesFromQueue();
+        checkTimeoutOnWaitingFutures();
         int available = inputStream.available();
         if (available > 0) {
             Message message = readMessage();
@@ -75,14 +78,49 @@ public class SocketHandler {
 
                 }
             }
+
+            return true;
         }
-        while (!tasksQueue.isEmpty()) {
-            ListenableFutureTask future = tasksQueue.poll();
-            if (future != null) {
-                future.run();
+        if (!tasksQueue.isEmpty()) {
+            while (!tasksQueue.isEmpty()) {
+                ListenableFutureTask future = tasksQueue.poll();
+                if (future != null) {
+                    future.run();
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    private long lastCheckTimeoutOnWaitingFuturesTimestamp;
+
+    private void checkTimeoutOnWaitingFutures() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastCheckTimeoutOnWaitingFuturesTimestamp > 500) {
+            lastCheckTimeoutOnWaitingFuturesTimestamp=currentTime;
+            for(int i=0;i<waitingForResponseFutures.size();i++){
+                WaitingFuture wf=waitingForResponseFutures.get(i);
+                if((wf.getTimestamp()+wf.getTimeout())<=currentTime){
+                    sendTimeoutErrorToFuture(wf);
+                    waitingForResponseFutures.remove(i);
+                    i--;
+                }
             }
         }
-        return true;
+    }
+    
+    private void sendTimeoutErrorToFuture(WaitingFuture waitingFuture){
+        waitingFuture.getFuture().finishFutureAndReturnData(new AsyncSocketTimeout("Timeout for futureid:"+waitingFuture.getResponseId()+". Waiting more than "+waitingFuture.getTimeout()));
+    }
+
+    private void addWaitingFuturesFromQueue() {
+        if (!waitingFuturesToAdd.isEmpty()) {
+            while (!waitingFuturesToAdd.isEmpty()) {
+                waitingForResponseFutures.add(waitingFuturesToAdd.poll());
+            }
+        }
     }
 
     public ListenableFutureTask write(byte[] buffer, int responseForRequest, Callback onFinish, Callback onError) {
@@ -99,7 +137,7 @@ public class SocketHandler {
         int newRequestId = getNewRequestId();
         ListenableFutureTaskWithData resultFuture = new ListenableFutureTaskWithData(onFinish, onError);
         WaitingFuture waitingFuture = new WaitingFuture(newRequestId, resultFuture, timeout);
-        waitingForResponseFutures.add(waitingFuture);
+        waitingFuturesToAdd.offer(waitingFuture);
         ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
             Message message = new Message(buffer, newRequestId, responseForRequest);
             writeMessage(message);
@@ -120,6 +158,8 @@ public class SocketHandler {
                 return;
             }
         }
+        System.out.println("Could not find waiting future with id " + message.getResponseForMessageId());
+
     }
 
     private Message readMessage() throws IOException {

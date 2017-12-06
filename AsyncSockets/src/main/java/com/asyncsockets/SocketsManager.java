@@ -18,7 +18,7 @@ public class SocketsManager {
     private Thread socketThread;
     private List<SocketHandler> socketsToAdd = Collections.synchronizedList(new ArrayList<>());
     private ConnectionEvent connectionEvent;
-    private static Executor eventsExecutor = Executors.newCachedThreadPool();
+    static Executor eventsExecutor = Executors.newCachedThreadPool();
 
     public SocketsManager() {
         eventsExecutor = Executors.newCachedThreadPool((Runnable r) -> {
@@ -61,6 +61,7 @@ public class SocketsManager {
 
         socketThread.setName("SocketsProcessingThread");
         socketThread.setDaemon(true);
+        socketThread.setPriority(Thread.MIN_PRIORITY + 1);
         socketThread.start();
     }
 
@@ -69,12 +70,13 @@ public class SocketsManager {
             processSockets();
         }
     }
+    int totalCount;
+    int sleepCount;
+    long lastProcessTime = System.currentTimeMillis();
 
     private void processSockets() {
         addWaitingSockets();
         boolean emptyLoop = true;
-        long lastProcessTime = System.currentTimeMillis();
-
         for (int i = 0; i < socketHandlers.size(); i++) {
             try {
                 SocketHandler sh = socketHandlers.get(i);
@@ -89,8 +91,8 @@ public class SocketsManager {
 
         if (emptyLoop) {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastProcessTime > 1) {
-                sleep(2);
+            if ((currentTime - lastProcessTime) > 1) {
+                sleep(5);
             }
         }
     }
