@@ -3,6 +3,7 @@ package com.asyncsockets;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +18,7 @@ public class SocketsManager {
     private List<SocketHandler> socketHandlers = new ArrayList<>();
     private Thread socketThread;
     private List<SocketHandler> socketsToAdd = Collections.synchronizedList(new ArrayList<>());
-    private ConnectionEvent connectionEvent;
+    private List<ConnectionEvent> connectionEvents = new ArrayList<>();
     static Executor eventsExecutor = Executors.newCachedThreadPool();
 
     public SocketsManager() {
@@ -28,8 +29,8 @@ public class SocketsManager {
         });
     }
 
-    public void setConnectionEvent(ConnectionEvent connectionEvent) {
-        this.connectionEvent = connectionEvent;
+    public void addConnectionEvent(ConnectionEvent connectionEvent) {
+        this.connectionEvents.add(connectionEvent);
     }
 
     public AsyncServerSocket createServerSocket(int port) {
@@ -38,9 +39,16 @@ public class SocketsManager {
     }
 
     public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port) throws IOException {
+        return createClientSocket(inetAddress, port, null);
+    }
+
+    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, ConnectionEvent connectionEvent) throws IOException {
         Socket socket = new Socket(inetAddress, port);
-        SocketHandler socketHandler = acceptSocket(socket, false);
+        SocketHandler socketHandler = new SocketHandler(socket);
+        socketHandler.setBelongToServer(false);
         AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, this, inetAddress, port);
+        socketHandler.setConnectionEvent(connectionEvent);
+        socketsToAdd.add(socketHandler);
         return clientSocket;
     }
 
@@ -85,16 +93,56 @@ public class SocketsManager {
                     lastProcessTime = System.currentTimeMillis();
                 }
             } catch (IOException ex) {
-                ex.printStackTrace();
+                if (isSocketClosedException(ex)) {
+                    SocketHandler sh = socketHandlers.get(i);
+                    closeSocket(sh);
+                    socketHandlers.remove(i);
+                    i--;
+                } else {
+                    ex.printStackTrace();
+                }
             }
         }
 
         if (emptyLoop) {
-            long currentTime = System.currentTimeMillis();
-            if ((currentTime - lastProcessTime) > 1) {
-                sleep(5);
+            if (socketHandlers.isEmpty()) {
+                sleep(500);
+            } else {
+                long currentTime = System.currentTimeMillis();
+                if ((currentTime - lastProcessTime) > 1) {
+                    sleep(2);
+                }
             }
         }
+    }
+
+    private void closeSocket(SocketHandler socketHandler) {
+        try {
+            for (ConnectionEvent ce : connectionEvents) {
+                ce.clientDisconnected(socketHandler);
+            }
+            if (socketHandler.getConnectionEvent() != null) {
+                socketHandler.getConnectionEvent().clientDisconnected(socketHandler);
+            }
+
+            socketHandler.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private boolean isSocketClosedException(Throwable thr) {
+        if (thr instanceof SocketException) {
+            String message = thr.getMessage();
+            if (message == null) {
+                return false;
+            }
+            if (message.contains("Connection reset by peer")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void addWaitingSockets() {
@@ -104,12 +152,19 @@ public class SocketsManager {
                 if (handler != null) {
                     socketHandlers.add(handler);
                     if (handler.isBelongToServer()) {
-                        if (connectionEvent != null) {
+                        if (!connectionEvents.isEmpty()) {
                             eventsExecutor.execute(() -> {
-                                connectionEvent.clientConnected(handler);
+                                for (ConnectionEvent ce : connectionEvents) {
+                                    ce.clientConnected(handler);
+                                }
                             });
-
                         }
+                    }
+
+                    if (handler.getConnectionEvent() != null) {
+                        eventsExecutor.execute(() -> {
+                            handler.getConnectionEvent().clientConnected(handler);
+                        });
                     }
                 }
             }

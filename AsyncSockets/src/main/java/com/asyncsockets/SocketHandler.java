@@ -19,6 +19,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SocketHandler {
 
+    private static final int BYTE_DATA_MESSAGE = Integer.MIN_VALUE;
+    private static final int PING_DATA_MESSAGE = Integer.MIN_VALUE - 1;
     private boolean belongToServer = false;
     private Socket socket;
     private InputStream inputStream;
@@ -30,11 +32,28 @@ public class SocketHandler {
     private DataEvent dataArrivedCallback;
     private static AtomicInteger requestIdGenerator = new AtomicInteger(0);
     private static Executor executor = SocketsManager.eventsExecutor;
+    private int pingInterval = 2000;
+    private long lastOperation = 0;
+    private ConnectionEvent connectionEvent;
 
     public SocketHandler(Socket socket) throws IOException {
         this.socket = socket;
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
+    }
+
+    public void close() throws IOException {
+        if (socket != null) {
+            socket.close();
+        }
+    }
+
+    public void setConnectionEvent(ConnectionEvent connectionEvent) {
+        this.connectionEvent = connectionEvent;
+    }
+
+    public ConnectionEvent getConnectionEvent() {
+        return connectionEvent;
     }
 
     public void setBelongToServer(boolean belongToServer) {
@@ -58,29 +77,35 @@ public class SocketHandler {
     }
 
     public boolean process() throws IOException {
+        boolean workDone = false;
+
         addWaitingFuturesFromQueue();
         checkTimeoutOnWaitingFutures();
-        int available = inputStream.available();
-        if (available > 0) {
-            Message message = readMessage();
-            if (message.getResponseForMessageId() != -1) {
-                sendMessageToWaitingFuture(message);
-            } else {
-                if (dataArrivedCallback != null) {
-                    executor.execute(() -> {
-                        try {
-                            Request response = new Request(message, SocketHandler.this);
-                            dataArrivedCallback.dataArrived(SocketHandler.this, response);
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-                    });
 
+        if (processAvailableData()) {
+            workDone = true;
+        }
+
+        if (processTasks()) {
+            workDone = true;
+        }
+
+        processPing();
+        return workDone;
+    }
+
+    private void processPing() throws IOException {
+        if (pingInterval > 0) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastOperation > pingInterval) {
+                if (tasksQueue.isEmpty()) {
+                    writeMessage(new Message(new byte[0], -1, -1, PING_DATA_MESSAGE));
                 }
             }
-
-            return true;
         }
+    }
+
+    private boolean processTasks() {
         if (!tasksQueue.isEmpty()) {
             while (!tasksQueue.isEmpty()) {
                 ListenableFutureTask future = tasksQueue.poll();
@@ -88,6 +113,36 @@ public class SocketHandler {
                     future.run();
                 }
             }
+
+            return true;
+        }
+        return false;
+    }
+
+    private boolean processAvailableData() throws IOException {
+        int available = inputStream.available();
+        if (available > 0) {
+            Message message = readMessage();
+            if (message.getMessageType() == PING_DATA_MESSAGE) {
+                System.out.println("Ping");
+            } else {
+                if (message.getResponseForMessageId() != -1) {
+                    sendMessageToWaitingFuture(message);
+                } else {
+                    if (dataArrivedCallback != null) {
+                        executor.execute(() -> {
+                            try {
+                                Request response = new Request(message, SocketHandler.this);
+                                dataArrivedCallback.dataArrived(SocketHandler.this, response);
+                            } catch (IOException ex) {
+                                ex.printStackTrace();
+                            }
+                        });
+
+                    }
+                }
+            }
+
             return true;
         }
 
@@ -99,10 +154,10 @@ public class SocketHandler {
     private void checkTimeoutOnWaitingFutures() {
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastCheckTimeoutOnWaitingFuturesTimestamp > 500) {
-            lastCheckTimeoutOnWaitingFuturesTimestamp=currentTime;
-            for(int i=0;i<waitingForResponseFutures.size();i++){
-                WaitingFuture wf=waitingForResponseFutures.get(i);
-                if((wf.getTimestamp()+wf.getTimeout())<=currentTime){
+            lastCheckTimeoutOnWaitingFuturesTimestamp = currentTime;
+            for (int i = 0; i < waitingForResponseFutures.size(); i++) {
+                WaitingFuture wf = waitingForResponseFutures.get(i);
+                if ((wf.getTimestamp() + wf.getTimeout()) <= currentTime) {
                     sendTimeoutErrorToFuture(wf);
                     waitingForResponseFutures.remove(i);
                     i--;
@@ -110,9 +165,9 @@ public class SocketHandler {
             }
         }
     }
-    
-    private void sendTimeoutErrorToFuture(WaitingFuture waitingFuture){
-        waitingFuture.getFuture().finishFutureAndReturnData(new AsyncSocketTimeout("Timeout for futureid:"+waitingFuture.getResponseId()+". Waiting more than "+waitingFuture.getTimeout()));
+
+    private void sendTimeoutErrorToFuture(WaitingFuture waitingFuture) {
+        waitingFuture.getFuture().finishFutureAndReturnData(new AsyncSocketTimeout("Timeout for futureid:" + waitingFuture.getResponseId() + ". Waiting more than " + waitingFuture.getTimeout()));
     }
 
     private void addWaitingFuturesFromQueue() {
@@ -125,7 +180,7 @@ public class SocketHandler {
 
     public ListenableFutureTask write(byte[] buffer, int responseForRequest, Callback onFinish, Callback onError) {
         ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
-            Message message = new Message(buffer, getNewRequestId(), responseForRequest);
+            Message message = new Message(buffer, getNewRequestId(), responseForRequest, BYTE_DATA_MESSAGE);
             writeMessage(message);
             return "OK";
         }, onFinish, onError);
@@ -139,7 +194,7 @@ public class SocketHandler {
         WaitingFuture waitingFuture = new WaitingFuture(newRequestId, resultFuture, timeout);
         waitingFuturesToAdd.offer(waitingFuture);
         ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
-            Message message = new Message(buffer, newRequestId, responseForRequest);
+            Message message = new Message(buffer, newRequestId, responseForRequest, BYTE_DATA_MESSAGE);
             writeMessage(message);
             return "OK";
         });
@@ -165,17 +220,21 @@ public class SocketHandler {
     private Message readMessage() throws IOException {
         int payloadSize = readInt();
         int messageId = readInt();
+        int messageType = readInt();
         int responseForMessageId = readInt();
         byte[] buffer = readBytes(payloadSize);
-        Message message = new Message(buffer, messageId, responseForMessageId);
+        Message message = new Message(buffer, messageId, responseForMessageId, messageType);
+        lastOperation = System.currentTimeMillis();
         return message;
     }
 
     private void writeMessage(Message message) throws IOException {
         writeInt(message.getBuffer().length);
         writeInt(message.getMessageId());
+        writeInt(message.getMessageType());
         writeInt(message.getResponseForMessageId());
         writeBuffer(message.getBuffer());
+        lastOperation = System.currentTimeMillis();
     }
 
     private int readInt() throws IOException {

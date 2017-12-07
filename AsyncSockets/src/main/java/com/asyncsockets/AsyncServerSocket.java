@@ -44,7 +44,7 @@ public class AsyncServerSocket {
     }
 
     public void setConnectionEvent(ConnectionEvent connectionEvent) {
-        socketManager.setConnectionEvent(connectionEvent);
+        socketManager.addConnectionEvent(connectionEvent);
     }
 
     public void stop() throws IOException {
@@ -56,4 +56,5 @@ public class AsyncServerSocket {
     private void acceptSocket(Socket socket) throws IOException {
         socketManager.acceptSocket(socket, true);
     }
+    
 }

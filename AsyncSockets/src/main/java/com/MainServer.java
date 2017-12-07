@@ -16,11 +16,11 @@ import java.util.concurrent.ExecutionException;
 /**
  * @author sad
  */
-public class Main {
+public class MainServer {
 
     private static boolean finishFlag;
 
-    public static void main(String[] args) throws UnknownHostException, IOException {
+    public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException {
         SocketsManager serverSocketManager = new SocketsManager();
         serverSocketManager.start();
 
@@ -28,7 +28,6 @@ public class Main {
         serverSocket.setConnectionEvent(new ConnectionEvent() {
             @Override
             public void clientConnected(SocketHandler socketHandler) {
-
                 try {
                     Request result = (Request) socketHandler.writeWithExpectingResult("0".getBytes(), -1, 2000, null, null).get();
                     while (true) {
@@ -36,9 +35,6 @@ public class Main {
                         String resultText = result.getResponseAsString();
                         int resultInt = Integer.parseInt(resultText);
                         resultInt++;
-                        if (resultInt > 500) {
-                            break;
-                        }
                         ListenableFutureTaskWithData future = result.writeInResponseWithExpectingResult(String.valueOf(resultInt).getBytes(), 10000, null, null);
                         result = (Request) future.get();
                     }
@@ -55,45 +51,8 @@ public class Main {
             }
         });
         serverSocket.start();
-        SocketsManager clientSocketManager = new SocketsManager();
-        clientSocketManager.start();
-        AsyncClientSocket clientSocket = clientSocketManager.createClientSocket(InetAddress.getLocalHost(), 8090);
-        clientSocket.setDataEvent(new DataEvent() {
-            @Override
-            public void dataArrived(SocketHandler socket, Request request) throws IOException {
-                System.out.println("Client first received data " + request.getResponseAsString());
-                try {
-                    while (true) {
-                        System.out.println("Client received [" + request.getResponseAsString() + "]");
-                        int receivedInt = Integer.parseInt(request.getResponseAsString());
-                        receivedInt++;
-                        ListenableFutureTaskWithData future = request.writeInResponseWithExpectingResult(String.valueOf(receivedInt).getBytes(), 10000, null, null);
-                        request = (Request) future.get();
-                    }
-                } catch (InterruptedException ex) {
-                    ex.printStackTrace();
-                } catch (ExecutionException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
 
-        sleepUntilFinish(99999);
+        Thread.sleep(999999);
     }
 
-    private static void sleepUntilFinish(long timeout) {
-        long startTime = System.currentTimeMillis();
-        while (finishFlag == false) {
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - startTime > timeout) {
-                throw new IllegalStateException("Sleep more then [" + timeout + "]");
-            }
-
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
 }
