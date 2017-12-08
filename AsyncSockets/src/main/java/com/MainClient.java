@@ -1,7 +1,6 @@
 package com;
 
 import com.asyncsockets.AsyncClientSocket;
-import com.asyncsockets.AsyncServerSocket;
 import com.asyncsockets.ConnectionEvent;
 import com.asyncsockets.DataEvent;
 import com.asyncsockets.ListenableFutureTaskWithData;
@@ -21,7 +20,7 @@ public class MainClient {
     public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException {
         SocketsManager clientSocketManager = new SocketsManager();
         clientSocketManager.start();
-        AsyncClientSocket clientSocket = clientSocketManager.createClientSocket(InetAddress.getLocalHost(), 8090,new ConnectionEvent() {
+        AsyncClientSocket clientSocket = clientSocketManager.createClientSocket(InetAddress.getLocalHost(), 8090, new ConnectionEvent() {
             @Override
             public void clientConnected(SocketHandler socketHandler) {
                 System.out.println("Socket connected");
@@ -31,8 +30,8 @@ public class MainClient {
             public void clientDisconnected(SocketHandler socketHandler) {
                 System.out.println("Socket disconnected");
             }
-        });
-        
+        }, 2000);
+
         clientSocket.setDataEvent(new DataEvent() {
             @Override
             public void dataArrived(SocketHandler socket, Request request) throws IOException {
@@ -42,7 +41,7 @@ public class MainClient {
                         System.out.println("Client received [" + request.getResponseAsString() + "]");
                         int receivedInt = Integer.parseInt(request.getResponseAsString());
                         receivedInt++;
-                        if(receivedInt>500){
+                        if (receivedInt > 500) {
                             break;
                         }
 
@@ -57,22 +56,6 @@ public class MainClient {
             }
         });
 
-       Thread.sleep(999999);
+        Thread.sleep(999999);
     }
-
-    /*private static void sleepUntilFinish(long timeout) {
-        long startTime = System.currentTimeMillis();
-        while (finishFlag == false) {
-            long currentTime = System.currentTimeMillis();
-            if (currentTime - startTime > timeout) {
-                throw new IllegalStateException("Sleep more then [" + timeout + "]");
-            }
-
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }*/
 }

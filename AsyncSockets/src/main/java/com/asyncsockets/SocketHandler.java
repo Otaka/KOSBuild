@@ -36,11 +36,21 @@ public class SocketHandler {
     private int pingInterval = 2000;
     private long lastOperation = 0;
     private ConnectionEvent connectionEvent;
+    private Object owner;
 
     public SocketHandler(Socket socket) throws IOException {
         this.socket = socket;
         inputStream = socket.getInputStream();
         outputStream = socket.getOutputStream();
+        lastOperation = System.currentTimeMillis();
+    }
+
+    void setOwner(Object owner) {
+        this.owner = owner;
+    }
+
+    Object getOwner() {
+        return owner;
     }
 
     public void close() throws IOException {

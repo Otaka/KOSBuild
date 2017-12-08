@@ -20,6 +20,7 @@ public class SocketsManager {
     private List<SocketHandler> socketsToAdd = Collections.synchronizedList(new ArrayList<>());
     private List<ConnectionEvent> connectionEvents = new ArrayList<>();
     static Executor eventsExecutor = Executors.newCachedThreadPool();
+    private List<AsyncClientSocket> clientSocketsScheduledForReconnection = Collections.synchronizedList(new ArrayList<>());
 
     public SocketsManager() {
         eventsExecutor = Executors.newCachedThreadPool((Runnable r) -> {
@@ -39,16 +40,39 @@ public class SocketsManager {
     }
 
     public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port) throws IOException {
-        return createClientSocket(inetAddress, port, null);
+        return createClientSocket(inetAddress, port, null, -1);
     }
 
-    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, ConnectionEvent connectionEvent) throws IOException {
-        Socket socket = new Socket(inetAddress, port);
-        SocketHandler socketHandler = new SocketHandler(socket);
-        socketHandler.setBelongToServer(false);
-        AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, inetAddress, port);
-        socketHandler.setConnectionEvent(connectionEvent);
-        socketsToAdd.add(socketHandler);
+    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, int autoreconnectTimeout) throws IOException {
+        return createClientSocket(inetAddress, port, null, autoreconnectTimeout);
+    }
+
+    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, ConnectionEvent connectionEvent, int autoreconnectTimeout) throws IOException {
+        Socket socket = null;
+        SocketHandler socketHandler = null;
+        try {
+            socket = new Socket(inetAddress, port);
+            socketHandler = new SocketHandler(socket);
+            socketHandler.setBelongToServer(false);
+        } catch (IOException ex) {
+            if (autoreconnectTimeout <= 0) {
+                throw ex;//exit immidiately
+            }
+        }
+
+        AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, inetAddress, port, autoreconnectTimeout);
+        clientSocket.setConnectionEvent(connectionEvent);
+        if (socketHandler != null) {
+            socketsToAdd.add(socketHandler);
+        } else {
+            clientSocket.setCrashed(true);
+            clientSocket.setLastReconnectTimestamp(System.currentTimeMillis());
+        }
+
+        if (autoreconnectTimeout > 0) {
+            clientSocketsScheduledForReconnection.add(clientSocket);
+        }
+
         return clientSocket;
     }
 
@@ -104,6 +128,7 @@ public class SocketsManager {
             }
         }
 
+        processReconnection();
         if (emptyLoop) {
             if (socketHandlers.isEmpty()) {
                 sleep(500);
@@ -116,13 +141,64 @@ public class SocketsManager {
         }
     }
 
+    private long lastCheckOfReconnection = 0;
+
+    private void processReconnection() {
+        long currentTime = System.currentTimeMillis();
+        if ((currentTime - lastCheckOfReconnection) > 1000) {
+            lastCheckOfReconnection = currentTime;
+            if (!clientSocketsScheduledForReconnection.isEmpty()) {
+                for (int i = 0; i < clientSocketsScheduledForReconnection.size(); i++) {
+                    AsyncClientSocket clientSocket = clientSocketsScheduledForReconnection.get(i);
+                    if (clientSocket.isCrashed()) {
+                        if ((currentTime - clientSocket.getLastReconnectTimestamp()) >= clientSocket.getAutoreconnectTimeInterval()) {
+                            tryToReconnectClientSocket(clientSocket);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void tryToReconnectClientSocket(AsyncClientSocket clientSocket) {
+        try {
+            Socket socket = new Socket(clientSocket.getInetAddress(), clientSocket.getPort());
+            SocketHandler socketHandler = new SocketHandler(socket);
+            socketHandler.setBelongToServer(false);
+            socketHandler.setOwner(clientSocket);
+            socketHandler.setDataArrivedCallback(clientSocket.getDataEvent());
+            clientSocket.setSocketHandler(socketHandler);
+            clientSocket.setCrashed(false);
+            clientSocket.setLastReconnectTimestamp(System.currentTimeMillis());
+            socketsToAdd.add(socketHandler);
+        } catch (IOException ex) {
+            clientSocket.setLastReconnectTimestamp(System.currentTimeMillis());
+        }
+
+    }
+
     private void closeSocket(SocketHandler socketHandler) {
         try {
             for (ConnectionEvent ce : connectionEvents) {
-                ce.clientDisconnected(socketHandler);
+                eventsExecutor.execute(() -> {
+                    ce.clientDisconnected(socketHandler);
+                });
             }
             if (socketHandler.getConnectionEvent() != null) {
-                socketHandler.getConnectionEvent().clientDisconnected(socketHandler);
+                eventsExecutor.execute(() -> {
+                    socketHandler.getConnectionEvent().clientDisconnected(socketHandler);
+                });
+            }
+            if (socketHandler.getOwner() != null && socketHandler.getOwner() instanceof AsyncClientSocket) {
+                AsyncClientSocket asyncClient = (AsyncClientSocket) socketHandler.getOwner();
+                if (asyncClient.getConnectionEvent() != null) {
+                    eventsExecutor.execute(() -> {
+                        asyncClient.getConnectionEvent().clientDisconnected(socketHandler);
+                    });
+                }
+                asyncClient.setSocketHandler(null);
+                asyncClient.setLastReconnectTimestamp(System.currentTimeMillis());
+                asyncClient.setCrashed(true);
             }
 
             socketHandler.close();
@@ -165,6 +241,12 @@ public class SocketsManager {
                         eventsExecutor.execute(() -> {
                             handler.getConnectionEvent().clientConnected(handler);
                         });
+                    }
+                    if (handler.getOwner() != null && handler.getOwner() instanceof AsyncClientSocket) {
+                        AsyncClientSocket asyncClient = (AsyncClientSocket) handler.getOwner();
+                        if (asyncClient.getConnectionEvent() != null) {
+                            asyncClient.getConnectionEvent().clientConnected(handler);
+                        }
                     }
                 }
             }
