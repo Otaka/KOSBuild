@@ -6,7 +6,7 @@
         <artifactId>KOSBuildSuperProject</artifactId>
         <version>0.1</version>
     </parent>
-    <groupId>org.visualeagle</groupId>
+    <groupId>com.visualeagle</groupId>
     <artifactId>VisualEagle</artifactId>
     <packaging>jar</packaging>
     <dependencies>
