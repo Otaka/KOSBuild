@@ -7,14 +7,12 @@ import java.net.InetAddress;
  */
 public class AsyncClientSocket {
 
-    private SocketsManager socketsManager;
-    private DataEvent dataEvent;
+
     private InetAddress inetAddress;
     private int port;
     private SocketHandler socketHandler;
 
-    AsyncClientSocket(SocketHandler socketHandler, SocketsManager socketsManager, InetAddress inetAddress, int port) {
-        this.socketsManager = socketsManager;
+    AsyncClientSocket(SocketHandler socketHandler,InetAddress inetAddress, int port) {
         this.inetAddress = inetAddress;
         this.port = port;
         this.socketHandler = socketHandler;
@@ -35,5 +33,4 @@ public class AsyncClientSocket {
     public void setDataEvent(DataEvent dataEvent) {
         socketHandler.setDataArrivedCallback(dataEvent);
     }
-
 }

@@ -1,5 +1,6 @@
 package com.asyncsockets;
 
+import com.asyncsockets.exceptions.AsyncSocketClosed;
 import com.asyncsockets.exceptions.AsyncSocketTimeout;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,6 +46,18 @@ public class SocketHandler {
     public void close() throws IOException {
         if (socket != null) {
             socket.close();
+            connectionEvent = null;
+            for (WaitingFuture wf : waitingForResponseFutures) {
+                wf.getFuture().finishFutureAndReturnException(new AsyncSocketClosed("Socket was closed"));
+            }
+            for (WaitingFuture wf : waitingFuturesToAdd) {
+                wf.getFuture().finishFutureAndReturnException(new AsyncSocketClosed("Socket was closed"));
+            }
+            waitingForResponseFutures.clear();
+            waitingFuturesToAdd.clear();
+            tasksQueue.clear();
+            dataArrivedCallback = null;
+
         }
     }
 
@@ -62,6 +75,10 @@ public class SocketHandler {
 
     public boolean isBelongToServer() {
         return belongToServer;
+    }
+
+    public boolean isClosed() {
+        return socket.isClosed();
     }
 
     public SocketAddress getRemoteAddress() {
@@ -179,28 +196,36 @@ public class SocketHandler {
     }
 
     public ListenableFutureTask write(byte[] buffer, int responseForRequest, Callback onFinish, Callback onError) {
-        ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
-            Message message = new Message(buffer, getNewRequestId(), responseForRequest, BYTE_DATA_MESSAGE);
-            writeMessage(message);
-            return "OK";
-        }, onFinish, onError);
-        tasksQueue.offer(future);
-        return future;
+        if (!isClosed()) {
+            ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
+                Message message = new Message(buffer, getNewRequestId(), responseForRequest, BYTE_DATA_MESSAGE);
+                writeMessage(message);
+                return "OK";
+            }, onFinish, onError);
+            tasksQueue.offer(future);
+            return future;
+        } else {
+            throw new AsyncSocketClosed("Socket is already closed");
+        }
     }
 
     public ListenableFutureTaskWithData writeWithExpectingResult(byte[] buffer, int responseForRequest, long timeout, Callback onFinish, Callback onError) {
-        int newRequestId = getNewRequestId();
-        ListenableFutureTaskWithData resultFuture = new ListenableFutureTaskWithData(onFinish, onError);
-        WaitingFuture waitingFuture = new WaitingFuture(newRequestId, resultFuture, timeout);
-        waitingFuturesToAdd.offer(waitingFuture);
-        ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
-            Message message = new Message(buffer, newRequestId, responseForRequest, BYTE_DATA_MESSAGE);
-            writeMessage(message);
-            return "OK";
-        });
+        if (!isClosed()) {
+            int newRequestId = getNewRequestId();
+            ListenableFutureTaskWithData resultFuture = new ListenableFutureTaskWithData(onFinish, onError);
+            WaitingFuture waitingFuture = new WaitingFuture(newRequestId, resultFuture, timeout);
+            waitingFuturesToAdd.offer(waitingFuture);
+            ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
+                Message message = new Message(buffer, newRequestId, responseForRequest, BYTE_DATA_MESSAGE);
+                writeMessage(message);
+                return "OK";
+            });
 
-        tasksQueue.offer(future);
-        return resultFuture;
+            tasksQueue.offer(future);
+            return resultFuture;
+        } else {
+            throw new AsyncSocketClosed("Socket is already closed");
+        }
     }
 
     private void sendMessageToWaitingFuture(Message message) {
@@ -213,8 +238,8 @@ public class SocketHandler {
                 return;
             }
         }
-        System.out.println("Could not find waiting future with id " + message.getResponseForMessageId());
 
+        System.out.println("Could not find waiting future with id " + message.getResponseForMessageId());
     }
 
     private Message readMessage() throws IOException {

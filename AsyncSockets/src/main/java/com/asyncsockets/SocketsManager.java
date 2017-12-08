@@ -46,7 +46,7 @@ public class SocketsManager {
         Socket socket = new Socket(inetAddress, port);
         SocketHandler socketHandler = new SocketHandler(socket);
         socketHandler.setBelongToServer(false);
-        AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, this, inetAddress, port);
+        AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, inetAddress, port);
         socketHandler.setConnectionEvent(connectionEvent);
         socketsToAdd.add(socketHandler);
         return clientSocket;
