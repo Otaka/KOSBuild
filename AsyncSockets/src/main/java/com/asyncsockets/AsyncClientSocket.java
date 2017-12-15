@@ -74,17 +74,17 @@ public class AsyncClientSocket {
     }
 
     public void setDataEvent(DataEvent dataEvent) {
-        this.dataEvent = dataEvent;
-        if (socketHandler != null) {
-            socketHandler.setDataArrivedCallback(dataEvent);
+        if (dataEvent != null) {
+            this.dataEvent = dataEvent;
+            if (socketHandler != null) {
+                socketHandler.setDataArrivedCallback(dataEvent);
+            }
         }
     }
 
     public DataEvent getDataEvent() {
         return dataEvent;
     }
-    
-    
 
     public void close() throws IOException {
         socketHandler.close();
@@ -102,12 +102,11 @@ public class AsyncClientSocket {
         return socketHandler.isClosed();
     }
 
-    public ListenableFutureTask write(byte[] buffer, int responseForRequest, Callback onFinish, Callback onError) {
-        return socketHandler.write(buffer, responseForRequest, onFinish, onError);
+    public ListenableFutureTask write(int commandId, byte[] buffer, int responseForRequest, Callback onFinish, Callback onError) {
+        return socketHandler.write(commandId, buffer, responseForRequest, onFinish, onError);
     }
 
-    public ListenableFutureTaskWithData writeWithExpectingResult(byte[] buffer, int responseForRequest, long timeout, Callback onFinish, Callback onError) {
-        return socketHandler.writeWithExpectingResult(buffer, responseForRequest, timeout, onFinish, onError);
+    public ListenableFutureTaskWithData writeWithExpectingResult(int commandId, byte[] buffer, int responseForRequest, long timeout, Callback onFinish, Callback onError) {
+        return socketHandler.writeWithExpectingResult(commandId, buffer, responseForRequest, timeout, onFinish, onError);
     }
-
 }

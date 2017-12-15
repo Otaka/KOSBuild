@@ -135,7 +135,7 @@ public class IconButton extends JPanel {
         if (selected) {
             Color background = backgroundColor;
             if (pressed) {
-                background = background.darker().darker();
+                background = background.darker().darker().darker();
             }
             g.setColor(background);
             g.fillRect(1, 1, getWidth() - 2, getHeight() - 2);

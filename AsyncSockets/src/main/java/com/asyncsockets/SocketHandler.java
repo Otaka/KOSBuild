@@ -33,7 +33,7 @@ public class SocketHandler {
     private DataEvent dataArrivedCallback;
     private static AtomicInteger requestIdGenerator = new AtomicInteger(0);
     private static Executor executor = SocketsManager.eventsExecutor;
-    private int pingInterval = 2000;
+    private int pingInterval = 5000;
     private long lastOperation = 0;
     private ConnectionEvent connectionEvent;
     private Object owner;
@@ -126,7 +126,7 @@ public class SocketHandler {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastOperation > pingInterval) {
                 if (tasksQueue.isEmpty()) {
-                    writeMessage(new Message(new byte[0], -1, -1, PING_DATA_MESSAGE));
+                    writeMessage(new Message(0, new byte[0], -1, -1, PING_DATA_MESSAGE));
                 }
             }
         }
@@ -151,7 +151,7 @@ public class SocketHandler {
         if (available > 0) {
             Message message = readMessage();
             if (message.getMessageType() == PING_DATA_MESSAGE) {
-                System.out.println("Ping");
+                //System.out.println("Ping");
             } else {
                 if (message.getResponseForMessageId() != -1) {
                     sendMessageToWaitingFuture(message);
@@ -205,10 +205,10 @@ public class SocketHandler {
         }
     }
 
-    public ListenableFutureTask write(byte[] buffer, int responseForRequest, Callback onFinish, Callback onError) {
+    public ListenableFutureTask write(int commandId, byte[] buffer, int responseForRequest, Callback onFinish, Callback onError) {
         if (!isClosed()) {
             ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
-                Message message = new Message(buffer, getNewRequestId(), responseForRequest, BYTE_DATA_MESSAGE);
+                Message message = new Message(commandId, buffer, getNewRequestId(), responseForRequest, BYTE_DATA_MESSAGE);
                 writeMessage(message);
                 return "OK";
             }, onFinish, onError);
@@ -219,14 +219,14 @@ public class SocketHandler {
         }
     }
 
-    public ListenableFutureTaskWithData writeWithExpectingResult(byte[] buffer, int responseForRequest, long timeout, Callback onFinish, Callback onError) {
+    public ListenableFutureTaskWithData<Request> writeWithExpectingResult(int commandId, byte[] buffer, int responseForRequest, long timeout, Callback onFinish, Callback onError) {
         if (!isClosed()) {
             int newRequestId = getNewRequestId();
             ListenableFutureTaskWithData resultFuture = new ListenableFutureTaskWithData(onFinish, onError);
             WaitingFuture waitingFuture = new WaitingFuture(newRequestId, resultFuture, timeout);
             waitingFuturesToAdd.offer(waitingFuture);
             ListenableFutureTask future = new ListenableFutureTask((Callable) () -> {
-                Message message = new Message(buffer, newRequestId, responseForRequest, BYTE_DATA_MESSAGE);
+                Message message = new Message(commandId, buffer, newRequestId, responseForRequest, BYTE_DATA_MESSAGE);
                 writeMessage(message);
                 return "OK";
             });
@@ -254,22 +254,24 @@ public class SocketHandler {
 
     private Message readMessage() throws IOException {
         int payloadSize = readInt();
+        int commandId = readInt();
         int messageId = readInt();
         int messageType = readInt();
         int responseForMessageId = readInt();
         byte[] buffer = readBytes(payloadSize);
-        Message message = new Message(buffer, messageId, responseForMessageId, messageType);
+        Message message = new Message(commandId, buffer, messageId, responseForMessageId, messageType);
         lastOperation = System.currentTimeMillis();
         return message;
     }
 
     private void writeMessage(Message message) throws IOException {
+        lastOperation = System.currentTimeMillis();
         writeInt(message.getBuffer().length);
+        writeInt(message.getCommandId());
         writeInt(message.getMessageId());
         writeInt(message.getMessageType());
         writeInt(message.getResponseForMessageId());
         writeBuffer(message.getBuffer());
-        lastOperation = System.currentTimeMillis();
     }
 
     private int readInt() throws IOException {

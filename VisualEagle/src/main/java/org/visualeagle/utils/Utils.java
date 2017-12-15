@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import javax.swing.JOptionPane;
-import org.visualeagle.gui.connectionmanager.AbstractSession;
 
 /**
  * @author Dmitry

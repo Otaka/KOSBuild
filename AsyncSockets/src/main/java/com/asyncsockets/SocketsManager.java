@@ -40,14 +40,14 @@ public class SocketsManager {
     }
 
     public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port) throws IOException {
-        return createClientSocket(inetAddress, port, null, -1);
+        return createClientSocket(inetAddress, port, null, -1,null);
     }
 
-    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, int autoreconnectTimeout) throws IOException {
-        return createClientSocket(inetAddress, port, null, autoreconnectTimeout);
+    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, int autoReconnectTimeout) throws IOException {
+        return createClientSocket(inetAddress, port, null, autoReconnectTimeout,null);
     }
 
-    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, ConnectionEvent connectionEvent, int autoreconnectTimeout) throws IOException {
+    public AsyncClientSocket createClientSocket(InetAddress inetAddress, int port, ConnectionEvent connectionEvent, int autoReconnectTimeout, DataEvent dataEvent) throws IOException {
         Socket socket = null;
         SocketHandler socketHandler = null;
         try {
@@ -55,12 +55,13 @@ public class SocketsManager {
             socketHandler = new SocketHandler(socket);
             socketHandler.setBelongToServer(false);
         } catch (IOException ex) {
-            if (autoreconnectTimeout <= 0) {
+            if (autoReconnectTimeout <= 0) {
                 throw ex;//exit immidiately
             }
         }
 
-        AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, inetAddress, port, autoreconnectTimeout);
+        AsyncClientSocket clientSocket = new AsyncClientSocket(socketHandler, inetAddress, port, autoReconnectTimeout);
+        clientSocket.setDataEvent(dataEvent);
         clientSocket.setConnectionEvent(connectionEvent);
         if (socketHandler != null) {
             socketsToAdd.add(socketHandler);
@@ -69,7 +70,7 @@ public class SocketsManager {
             clientSocket.setLastReconnectTimestamp(System.currentTimeMillis());
         }
 
-        if (autoreconnectTimeout > 0) {
+        if (autoReconnectTimeout > 0) {
             clientSocketsScheduledForReconnection.add(clientSocket);
         }
 
@@ -207,15 +208,26 @@ public class SocketsManager {
         }
     }
 
-    private boolean isSocketClosedException(Throwable thr) {
-        if (thr instanceof SocketException) {
+    static boolean isSocketClosedException(Throwable thr) {
+        if (thr instanceof SocketException|| thr instanceof IOException) {
             String message = thr.getMessage();
             if (message == null) {
                 return false;
             }
-            if (message.contains("Connection reset by peer")) {
+            message=message.toLowerCase();
+            if (message.contains("stream closed")) {
                 return true;
             }
+            if (message.contains("connection reset by peer")) {
+                return true;
+            }
+            if (message.contains("software caused connection abort: socket write error")) {
+                return true;
+            }
+            if (message.contains("socket closed")) {
+                return true;
+            }
+            
         }
 
         return false;
@@ -226,7 +238,6 @@ public class SocketsManager {
             while (!socketsToAdd.isEmpty()) {
                 SocketHandler handler = socketsToAdd.remove(0);
                 if (handler != null) {
-                    socketHandlers.add(handler);
                     if (handler.isBelongToServer()) {
                         if (!connectionEvents.isEmpty()) {
                             eventsExecutor.execute(() -> {
@@ -237,6 +248,7 @@ public class SocketsManager {
                         }
                     }
 
+                    socketHandlers.add(handler);
                     if (handler.getConnectionEvent() != null) {
                         eventsExecutor.execute(() -> {
                             handler.getConnectionEvent().clientConnected(handler);

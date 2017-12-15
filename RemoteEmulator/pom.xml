@@ -18,5 +18,10 @@
             <version>2.5</version>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>com.visualeagle</groupId>
+            <artifactId>AsyncSockets</artifactId>
+            <version>0.1</version>
+        </dependency>
     </dependencies>
 </project>

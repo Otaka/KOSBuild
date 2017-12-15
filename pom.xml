@@ -9,6 +9,7 @@
         <module>KOSBuild</module>
         <module>GccProjectInfoPlugin</module>
         <module>GccCompilerPlugin</module>
+        <module>AsyncSockets</module>
         <module>VisualEagle</module>
         
     </modules>

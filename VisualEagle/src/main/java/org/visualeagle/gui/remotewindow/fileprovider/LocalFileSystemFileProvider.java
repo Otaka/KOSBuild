@@ -1,5 +1,7 @@
 package org.visualeagle.gui.remotewindow.fileprovider;
 
+import com.asyncsockets.ListenableFutureTask;
+import com.asyncsockets.ListenableFutureTaskWithData;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,23 +17,36 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         setCurrentFolder(null);
     }
 
+    private RFile createRFileFromFile(File file) {
+        RFile f = new RFile(file.getParent(), file.getName(), file.length(), file.isDirectory(), file.lastModified(), this);
+        return f;
+    }
+
+    private File createFileFromRFile(RFile file) {
+        return new File(file.getParentPath(), file.getName());
+    }
+
     @Override
-    public List<RFile> listFiles(RFile folder) {
+    public ListenableFutureTask<List<RFile>> listFiles(RFile folder) {
+        ListenableFutureTaskWithData<List<RFile>> future = new ListenableFutureTaskWithData<>();
         if (!folder.isDirectory()) {
-            throw new RuntimeException("Folder [" + folder.getFullPath() + "] should be folder, but it is a file");
+            future.finishFutureAndReturnException(new RuntimeException("Folder [" + folder.getFullPath() + "] should be folder, but it is a file"));
+
         }
 
-        File localFolderObject = createFileFormRFile(folder);
+        File localFolderObject = createFileFromRFile(folder);
         List<RFile> files = new ArrayList<>();
         for (File f : localFolderObject.listFiles()) {
             files.add(createRFileFromFile(f));
         }
 
-        return files;
+        future.finishFutureAndReturnData(files);
+        return future;
     }
 
     @Override
-    public List<RFile> listRoots() {
+    public ListenableFutureTask<List<RFile>> listRoots() {
+        ListenableFutureTaskWithData<List<RFile>> future = new ListenableFutureTaskWithData<>();
         List<RFile> roots = new ArrayList<>();
         for (File root : File.listRoots()) {
             String rootName = root.getPath();
@@ -39,22 +54,16 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
             roots.add(new RFile(null, rootName, root.length(), root.isDirectory(), root.lastModified(), this));
         }
 
-        return roots;
+        future.finishFutureAndReturnData(roots);
+        return future;
     }
 
     @Override
-    public boolean removeFile(RFile file) {
-        File localFileObject = createFileFormRFile(file);
-        return FileUtils.deleteQuietly(localFileObject);
+    public ListenableFutureTask<Boolean> removeFile(RFile file) {
+        ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
+        File localFileObject = createFileFromRFile(file);
+        boolean result = FileUtils.deleteQuietly(localFileObject);
+        future.finishFutureAndReturnData(result);
+        return future;
     }
-
-    private RFile createRFileFromFile(File file) {
-        RFile f = new RFile(file.getParent(), file.getName(), file.length(), file.isDirectory(), file.lastModified(), this);
-        return f;
-    }
-
-    private File createFileFormRFile(RFile file) {
-        return new File(file.getParentPath(), file.getName());
-    }
-
 }

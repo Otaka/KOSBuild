@@ -86,7 +86,7 @@ public class MainMenu {
         projectMenu.add(createJMenuItem("Run", "run_app", "F9", "run",requireLoadedProjectLookupFlag));
         projectMenu.add(createJMenuItem("Debug", "debug_app", "ctrl F9", "debug",requireLoadedProjectLookupFlag));
         projectMenu.addSeparator();
-        projectMenu.add(createJMenuItem("Remote commander", "remote_commander", null, "debug",new String[]{"connectedClient"}));
+        projectMenu.add(createJMenuItem("Remote commander", "remote_commander", null, null,new String[]{"connectedClient"}));
         processEnableDisableRequireProjectMenu(projectMenu);
         return projectMenu;
     }

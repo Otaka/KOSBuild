@@ -1,5 +1,6 @@
 package org.visualeagle.gui.remotewindow.fileprovider;
 
+import com.asyncsockets.ListenableFutureTask;
 import java.util.List;
 
 /**
@@ -17,10 +18,10 @@ public abstract class AbstractFileProvider {
         this.currentFolder = currentFolder;
     }
 
-    public abstract List<RFile> listFiles(RFile folder);
+    public abstract ListenableFutureTask<List<RFile>> listFiles(RFile folder);
 
-    public abstract List<RFile> listRoots();
+    public abstract ListenableFutureTask<List<RFile>> listRoots();
 
-    public abstract boolean removeFile(RFile folder);
+    public abstract ListenableFutureTask<Boolean> removeFile(RFile folder);
 
 }

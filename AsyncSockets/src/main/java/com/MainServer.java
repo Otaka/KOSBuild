@@ -29,13 +29,13 @@ public class MainServer {
             @Override
             public void clientConnected(SocketHandler socketHandler) {
                 try {
-                    Request result = (Request) socketHandler.writeWithExpectingResult("0".getBytes(), -1, 2000, null, null).get();
+                    Request result = (Request) socketHandler.writeWithExpectingResult(0,"0".getBytes(), -1, 2000, null, null).get();
                     while (true) {
                         System.out.println("Server received [" + result.getResponseAsString() + "]");
                         String resultText = result.getResponseAsString();
                         int resultInt = Integer.parseInt(resultText);
                         resultInt++;
-                        ListenableFutureTaskWithData future = result.writeInResponseWithExpectingResult(String.valueOf(resultInt).getBytes(), 10000, null, null);
+                        ListenableFutureTaskWithData future = result.writeInResponseWithExpectingResult(0,String.valueOf(resultInt).getBytes(), 10000, null, null);
                         result = (Request) future.get();
                     }
                 } catch (InterruptedException ex) {

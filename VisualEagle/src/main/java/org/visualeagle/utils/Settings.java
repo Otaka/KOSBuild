@@ -11,8 +11,21 @@ public class Settings {
 
     private static final Preferences preferences = Preferences.userNodeForPackage(MainWindow.class);
 
+    public static boolean containsProperty(String key) {
+        try {
+            return preferences.nodeExists(key);
+        } catch (BackingStoreException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException("Exception while try to check property ["+key+"] if it is exists",ex);
+        }
+    }
+
     public static String getStringProperty(String key, String defaultValue) {
         return preferences.get(key, defaultValue);
+    }
+
+    public static void removeProperty(String key) {
+        preferences.remove(key);
     }
 
     public static void putStringProperty(String key, String value) {
@@ -42,6 +55,7 @@ public class Settings {
             ex.printStackTrace();
         }
     }
+
     public static void clear() {
         try {
             preferences.clear();

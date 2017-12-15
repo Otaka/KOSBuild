@@ -30,7 +30,10 @@ public class AsyncServerSocket {
                         Socket newSocket = serverSocket.accept();
                         acceptSocket(newSocket);
                     } catch (SocketException ex) {
-                        ex.printStackTrace();
+                        if(!SocketsManager.isSocketClosedException(ex)){
+                            ex.printStackTrace();
+                        }
+
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
@@ -42,6 +45,12 @@ public class AsyncServerSocket {
         serverAcceptThread.setName("serverAcceptThread");
         serverAcceptThread.start();
     }
+
+    public int getPort() {
+        return port;
+    }
+    
+    
 
     public void setConnectionEvent(ConnectionEvent connectionEvent) {
         socketManager.addConnectionEvent(connectionEvent);

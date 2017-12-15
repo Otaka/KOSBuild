@@ -14,12 +14,12 @@ import java.io.IOException;
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import org.visualeagle.gui.connectionmanager.ConnectionManager;
-import org.visualeagle.gui.connectionmanager.ConnectionStatus;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.visualeagle.utils.GuiUtils;
 import org.visualeagle.gui.small.directorychooser.ProjectDirectoryChooser;
 import org.visualeagle.gui.logwindow.GuiLogPrinter;
 import org.visualeagle.gui.logwindow.LogWindow;
+import org.visualeagle.gui.remoteconnection.RemoteConnectionManager;
 import org.visualeagle.gui.remotewindow.RemoteCommanderWindow;
 import org.visualeagle.project.ProjectManager;
 import org.visualeagle.project.projectloaders.KosBuildGccProjectLoader;
@@ -92,10 +92,17 @@ public class MainWindow extends JFrame {
         mainMenu = new MainMenu();
         setJMenuBar(mainMenu.constructMainMenu());
 
-        Lookup.get().put(ConnectionManager.class, new ConnectionManager().start());
-
+        //  Lookup.get().put(ConnectionManager.class, new ConnectionManager().start());
+        RemoteConnectionManager remoteConnectionManager = new RemoteConnectionManager();
+        Lookup.get().put(RemoteConnectionManager.class, remoteConnectionManager);
         statusPanel = new StatusPanel();
         getContentPane().add(statusPanel, BorderLayout.SOUTH);
+        try {
+            remoteConnectionManager.init();//init should be after status panel, because status panel sets own callbacks
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Utils.showErrorMessage("Error while start connectionManager \n" + ExceptionUtils.getRootCauseMessage(ex));
+        }
         MainToolBar mainToolbar = new MainToolBar();
         getContentPane().add(mainToolbar, BorderLayout.NORTH);
         Lookup.get().put(MainWindow.class, this);
@@ -117,15 +124,15 @@ public class MainWindow extends JFrame {
     }
 
     private void remoteCommander() {
-        ConnectionManager connectionManager = Lookup.get().get(ConnectionManager.class);
-        if (connectionManager.getConnectionStatus() != ConnectionStatus.CONNECTED) {
+        RemoteConnectionManager connectionManager = Lookup.get().get(RemoteConnectionManager.class);
+        if (!connectionManager.isConnectionEstablished()) {
             Utils.showErrorMessage("Please make connection to remote machine first");
             return;
         }
 
         RemoteCommanderWindow remoteCommanderWindow = new RemoteCommanderWindow();
         remoteCommanderWindow.setVisible(true);
-
+         
     }
 
     private void openProject() {

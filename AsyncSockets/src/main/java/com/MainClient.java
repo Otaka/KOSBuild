@@ -30,9 +30,7 @@ public class MainClient {
             public void clientDisconnected(SocketHandler socketHandler) {
                 System.out.println("Socket disconnected");
             }
-        }, 2000);
-
-        clientSocket.setDataEvent(new DataEvent() {
+        }, 2000, new DataEvent() {
             @Override
             public void dataArrived(SocketHandler socket, Request request) throws IOException {
                 System.out.println("Client first received data " + request.getResponseAsString());
@@ -45,7 +43,7 @@ public class MainClient {
                             break;
                         }
 
-                        ListenableFutureTaskWithData future = request.writeInResponseWithExpectingResult(String.valueOf(receivedInt).getBytes(), 10000, null, null);
+                        ListenableFutureTaskWithData future = request.writeInResponseWithExpectingResult(0,String.valueOf(receivedInt).getBytes(), 10000, null, null);
                         request = (Request) future.get();
                     }
                 } catch (InterruptedException ex) {
