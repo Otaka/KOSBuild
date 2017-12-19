@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.GridLayout;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import org.visualeagle.gui.mainwindow.MainWindow;
 import org.visualeagle.gui.remotewindow.fileprovider.FileSystemType;
@@ -34,6 +35,8 @@ public class RemoteCommanderWindow extends JDialog {
         rightPanel = createFilePanel();
         leftPanel.setOppositePanel(rightPanel);
         rightPanel.setOppositePanel(leftPanel);
+
+        
         filePanelContainer.add(leftPanel);
         filePanelContainer.add(rightPanel);
         SwingUtilities.invokeLater(() -> {

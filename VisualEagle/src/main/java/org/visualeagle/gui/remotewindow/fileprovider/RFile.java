@@ -1,5 +1,6 @@
 package org.visualeagle.gui.remotewindow.fileprovider;
 
+import java.io.File;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -33,6 +34,21 @@ public class RFile {
 
     public String getParentPath() {
         return parentPath;
+    }
+
+    public RFile getParentRFile() {
+        if (parentPath == null) {
+            return null;
+        }
+
+        if (parentPath.endsWith(":")) {
+            return new RFile(null, parentPath+"/", 0, true, 0, fileProvider);
+        } else if (parentPath.endsWith(":/")) {
+            return new RFile(null, parentPath, 0, true, 0, fileProvider);
+        } else {
+            File tempFile = new File(parentPath);
+            return new RFile(tempFile.getParent(), tempFile.getName(), 0, true, 0, fileProvider);
+        }
     }
 
     public long getLastModified() {

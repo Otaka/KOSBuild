@@ -6,7 +6,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author sad
@@ -31,12 +30,13 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         ListenableFutureTaskWithData<List<RFile>> future = new ListenableFutureTaskWithData<>();
         if (!folder.isDirectory()) {
             future.finishFutureAndReturnException(new RuntimeException("Folder [" + folder.getFullPath() + "] should be folder, but it is a file"));
-
         }
 
         File localFolderObject = createFileFromRFile(folder);
         List<RFile> files = new ArrayList<>();
-        for (File f : localFolderObject.listFiles()) {
+        File[] children = localFolderObject.listFiles();
+        children = (children == null) ? new File[0] : children;
+        for (File f : children) {
             files.add(createRFileFromFile(f));
         }
 
@@ -50,8 +50,8 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         List<RFile> roots = new ArrayList<>();
         for (File root : File.listRoots()) {
             String rootName = root.getPath();
-            rootName = StringUtils.removeEnd(root.getPath(), "\\");//fix for windows
-            roots.add(new RFile(null, rootName, root.length(), root.isDirectory(), root.lastModified(), this));
+            // rootName = StringUtils.removeEnd(root.getPath(), "\\");//fix for windows
+            roots.add(new RFile(null, rootName, root.length(), true, root.lastModified(), this));
         }
 
         future.finishFutureAndReturnData(roots);

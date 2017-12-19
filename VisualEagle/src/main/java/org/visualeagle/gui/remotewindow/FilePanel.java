@@ -4,29 +4,36 @@ import com.asyncsockets.Callback;
 import com.asyncsockets.ListenableFutureTask;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.FlowLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JMenuItem;
 import org.visualeagle.gui.remotewindow.fileprovider.RFile;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.visualeagle.gui.remotewindow.fileprovider.AbstractFileProvider;
 import org.visualeagle.gui.remotewindow.fileprovider.FileSystemType;
 import org.visualeagle.gui.remotewindow.fileprovider.LocalFileSystemFileProvider;
+import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.Utils;
 
 public class FilePanel extends JPanel {
@@ -36,10 +43,13 @@ public class FilePanel extends JPanel {
     private Map<FileSystemType, AbstractFileProvider> fileProvidersCacheMap = new HashMap<>();
     private JComboBox<FileSystemType> fileSystemSelectorCB;
     private JList<RFile> fileList;
+    private final RFile parentRFile;
+    private JTextField pathTextField;
 
     public FilePanel() {
         setLayout(new BorderLayout(5, 5));
         add(createHeader(), BorderLayout.NORTH);
+        parentRFile = createGoToParentRFile();
 
         fileList = new JList<>(new DefaultListModel());
         fileList.setCellRenderer(new DefaultListCellRenderer() {
@@ -47,17 +57,23 @@ public class FilePanel extends JPanel {
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 RFile file = (RFile) list.getModel().getElementAt(index);
-                ((JLabel) component).setText(file.getName());
+                JLabel labelComponent = (JLabel) component;
+                labelComponent.setText(file.getName());
+                if (file.isDirectory()) {
+                    labelComponent.setIcon(ImageManager.get().getIcon("folder"));
+                } else {
+                    labelComponent.setIcon(ImageManager.get().getIcon("file"));
+                }
                 return component;
             }
         });
 
         fileList.addKeyListener(new KeyAdapter() {
             @Override
-            public void keyTyped(KeyEvent e) {
+            public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     if (fileList.getSelectedIndex() != -1) {
-                        onFileSelected();
+                        onFileSelected(fileList.getSelectedValue());
                     }
                 }
             }
@@ -66,21 +82,66 @@ public class FilePanel extends JPanel {
         fileList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
+                if (e.getClickCount() > 1 && (e.getClickCount() % 2) == 0) {
                     if (fileList.getSelectedIndex() != -1) {
-                        onFileSelected();
+                        onFileSelected(fileList.getSelectedValue());
                     }
                 }
             }
         });
 
-        add(fileList);
+        JScrollPane scrollPane = new JScrollPane(fileList);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(10);
+        add(scrollPane);
+        fileList.setComponentPopupMenu(createPopupMenu());
+    }
+
+    private JPopupMenu createPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+
+        JMenuItem copy = new JMenuItem("Copy");
+        copy.addActionListener(this::copySelectedFiles);
+        popupMenu.add(copy);
+
+        JMenuItem createFolder = new JMenuItem("Create Folder");
+        createFolder.addActionListener(this::createFolder);
+        popupMenu.add(createFolder);
+
+        JMenuItem deleteFolder = new JMenuItem("Delete");
+        deleteFolder.addActionListener(this::deleteSelectedFiles);
+        popupMenu.add(deleteFolder);
+
+        JMenuItem rename = new JMenuItem("Rename");
+        rename.addActionListener(this::renameSelectedFile);
+        popupMenu.add(rename);
+
+        return popupMenu;
+    }
+
+    private void copySelectedFiles(ActionEvent e) {
+
+    }
+
+    private void createFolder(ActionEvent e) {
+
+    }
+
+    private void deleteSelectedFiles(ActionEvent e) {
+
+    }
+
+    private void renameSelectedFile(ActionEvent e) {
+
+    }
+
+    private RFile createGoToParentRFile() {
+        return new RFile(null, "..", 0, true, 0, null);
     }
 
     private JPanel createHeader() {
         JPanel headPanel = new JPanel();
         headPanel.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
-        headPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        headPanel.setLayout(new BoxLayout(headPanel, BoxLayout.X_AXIS));
         fileSystemSelectorCB = new JComboBox<>();
         headPanel.add(fileSystemSelectorCB);
         fileSystemSelectorCB.addItem(FileSystemType.LOCAL);
@@ -91,11 +152,45 @@ public class FilePanel extends JPanel {
             changeFileProvider(fileSystemType);
         });
 
+        pathTextField = new JTextField();
+        pathTextField.setMinimumSize(new Dimension(10, 25));
+        pathTextField.setPreferredSize(new Dimension(500, 25));
+        pathTextField.setEditable(false);
+        headPanel.add(pathTextField);
         return headPanel;
     }
 
-    private void onFileSelected() {
+    private void onFileSelected(RFile file) {
+        if (file == parentRFile) {
+            goToParent();
+        } else if (file.isDirectory()) {
+            enterInDirectory(file);
+        } else {
+            Utils.showErrorMessage("Viewing of the file is not implemented");
+        }
+    }
 
+    private void goToParent() {
+        RFile currentFolder = fileProvider.getCurrentFolder();
+        if (currentFolder != null) {
+            RFile parentFile = currentFolder.getParentRFile();
+            setCurrentFolder(parentFile);
+            fillFileList();
+        }
+    }
+
+    private void enterInDirectory(RFile file) {
+        setCurrentFolder(file);
+        fillFileList();
+    }
+
+    private void setCurrentFolder(RFile file) {
+        fileProvider.setCurrentFolder(file);
+        if (file != null) {
+            pathTextField.setText(file.getFullPath());
+        } else {
+            pathTextField.setText("");
+        }
     }
 
     public void changeFileProvider(FileSystemType fileSystemType) {
@@ -118,7 +213,6 @@ public class FilePanel extends JPanel {
 
     private void fillFileList() {
         DefaultListModel fileListModel = (DefaultListModel) fileList.getModel();
-        fileListModel.clear();
         ListenableFutureTask<List<RFile>> future;
         if (fileProvider.getCurrentFolder() == null) {
             future = fileProvider.listRoots();
@@ -129,10 +223,34 @@ public class FilePanel extends JPanel {
         future.setOnError(createErrorCallback());
         future.setOnFinish((List<RFile> result) -> {
             SwingUtilities.invokeLater(() -> {
+                fileListModel.clear();
+                sortFileList(result);
+
+                RFile currentFolder = fileProvider.getCurrentFolder();
+                if (currentFolder != null) {
+                    fileListModel.addElement(parentRFile);
+                }
+
                 for (RFile file : result) {
                     fileListModel.addElement(file);
                 }
+
+                if (!result.isEmpty()) {
+                    fileList.setSelectedIndex(0);
+                }
             });
+        });
+    }
+
+    private void sortFileList(List<RFile> files) {
+        Collections.sort(files, (RFile o1, RFile o2) -> {
+            if (o1.isDirectory() && !o2.isDirectory()) {
+                return -1;
+            } else if (!o1.isDirectory() && o2.isDirectory()) {
+                return 1;
+            } else {
+                return o1.getName().compareToIgnoreCase(o2.getName());
+            }
         });
     }
 
