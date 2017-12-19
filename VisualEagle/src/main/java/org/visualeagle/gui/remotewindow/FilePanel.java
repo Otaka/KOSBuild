@@ -22,6 +22,8 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import static javax.swing.JOptionPane.QUESTION_MESSAGE;
 import org.visualeagle.gui.remotewindow.fileprovider.RFile;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
@@ -118,26 +120,6 @@ public class FilePanel extends JPanel {
         return popupMenu;
     }
 
-    private void copySelectedFiles(ActionEvent e) {
-
-    }
-
-    private void createFolder(ActionEvent e) {
-
-    }
-
-    private void deleteSelectedFiles(ActionEvent e) {
-
-    }
-
-    private void renameSelectedFile(ActionEvent e) {
-
-    }
-
-    private RFile createGoToParentRFile() {
-        return new RFile(null, "..", 0, true, 0, null);
-    }
-
     private JPanel createHeader() {
         JPanel headPanel = new JPanel();
         headPanel.setBorder(BorderFactory.createBevelBorder(BevelBorder.RAISED));
@@ -158,6 +140,10 @@ public class FilePanel extends JPanel {
         pathTextField.setEditable(false);
         headPanel.add(pathTextField);
         return headPanel;
+    }
+
+    private RFile createGoToParentRFile() {
+        return new RFile(null, "..", 0, true, 0, null);
     }
 
     private void onFileSelected(RFile file) {
@@ -260,5 +246,34 @@ public class FilePanel extends JPanel {
 
     public FilePanel getOppositePanel() {
         return oppositePanel;
+    }
+
+    private void copySelectedFiles(ActionEvent e) {
+
+    }
+
+    private void createFolder(ActionEvent e) {
+
+    }
+
+    private void deleteSelectedFiles(ActionEvent e) {
+
+    }
+
+    private void renameSelectedFile(ActionEvent e) {
+        if (fileList.getSelectedIndices().length == 0) {
+            Utils.showErrorMessage("Please select file that will be renamed");
+            return;
+        }
+        if (fileList.getSelectedIndices().length > 1) {
+            Utils.showErrorMessage("Cannot rename many files");
+            return;
+        }
+
+        RFile selectedFile = fileList.getSelectedValue();
+        String name = (String) JOptionPane.showInputDialog(this, "Please write new name for file",
+                "Rename", QUESTION_MESSAGE, null, null,
+                selectedFile.getName());
+        System.out.println("New file name = [" + name + "]");
     }
 }
