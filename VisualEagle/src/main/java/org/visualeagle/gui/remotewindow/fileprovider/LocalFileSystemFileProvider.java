@@ -66,4 +66,23 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         future.finishFutureAndReturnData(result);
         return future;
     }
+
+    @Override
+    public ListenableFutureTask<Boolean> renameFile(RFile file, String newName) {
+        ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
+        File localFileObject = createFileFromRFile(file);
+        boolean result = localFileObject.renameTo(new File(localFileObject.getParentFile(), newName));
+        future.finishFutureAndReturnData(result);
+        return future;
+    }
+
+    @Override
+    public ListenableFutureTask<Boolean> createFolder(RFile currentFolder, String newFolderName) {
+        ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
+        File localFileObject = createFileFromRFile(currentFolder);
+        File newFolderFileObject=new File(localFileObject, newFolderName);
+        boolean result=newFolderFileObject.mkdirs();
+        future.finishFutureAndReturnData(result);
+        return future;
+    }
 }

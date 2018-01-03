@@ -24,4 +24,7 @@ public abstract class AbstractFileProvider {
 
     public abstract ListenableFutureTask<Boolean> removeFile(RFile folder);
 
+    public abstract ListenableFutureTask<Boolean> renameFile(RFile file, String newName);
+    public abstract ListenableFutureTask<Boolean> createFolder(RFile currentFolder, String newFolderName);
+
 }

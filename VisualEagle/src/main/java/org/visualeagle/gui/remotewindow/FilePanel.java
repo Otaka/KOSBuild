@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
@@ -83,6 +85,17 @@ public class FilePanel extends JPanel {
 
         fileList.addMouseListener(new MouseAdapter() {
             @Override
+            public void mousePressed(MouseEvent e) {
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    JList list = (JList) e.getSource();
+                    int row = list.locationToIndex(e.getPoint());
+                    list.setSelectedIndex(row);
+                }
+            }
+        });
+
+        fileList.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() > 1 && (e.getClickCount() % 2) == 0) {
                     if (fileList.getSelectedIndex() != -1) {
@@ -93,7 +106,7 @@ public class FilePanel extends JPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(fileList);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(10);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(20);
         add(scrollPane);
         fileList.setComponentPopupMenu(createPopupMenu());
     }
@@ -172,8 +185,13 @@ public class FilePanel extends JPanel {
 
     private void setCurrentFolder(RFile file) {
         fileProvider.setCurrentFolder(file);
-        if (file != null) {
-            pathTextField.setText(file.getFullPath());
+        updatePathTextField();
+    }
+    
+    private void updatePathTextField(){
+        RFile currentFolder=fileProvider.getCurrentFolder();
+        if (currentFolder != null) {
+            pathTextField.setText(currentFolder.getFullPath());
         } else {
             pathTextField.setText("");
         }
@@ -188,6 +206,7 @@ public class FilePanel extends JPanel {
         }
 
         fillFileList();
+        updatePathTextField();
     }
 
     private Callback<Throwable> createErrorCallback() {
@@ -253,7 +272,32 @@ public class FilePanel extends JPanel {
     }
 
     private void createFolder(ActionEvent e) {
-
+        try {
+            String newName = (String) JOptionPane.showInputDialog(this, "Enter directory name",
+                    "Create folder", QUESTION_MESSAGE, null, null,
+                    "new_folder");
+            if (newName == null) {
+                return;
+            }
+            
+            newName = newName.trim();
+            if (newName.isEmpty() || newName.contains("?") || newName.contains("\\") || newName.contains("/")) {
+                Utils.showErrorMessage("Wrong name [" + newName + "]. It should not be empty and should not contain special characters");
+                return;
+            }
+            
+            ListenableFutureTask<Boolean> result = fileProvider.createFolder(fileProvider.getCurrentFolder(), newName);
+            
+            Boolean resultFlag = result.get();
+            if (Objects.equals(resultFlag, Boolean.FALSE)) {
+                Utils.showErrorMessage("Cannot create folder with name ["+newName+"]");
+                return;
+            }
+            
+            fillFileList();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     private void deleteSelectedFiles(ActionEvent e) {
@@ -261,19 +305,50 @@ public class FilePanel extends JPanel {
     }
 
     private void renameSelectedFile(ActionEvent e) {
-        if (fileList.getSelectedIndices().length == 0) {
-            Utils.showErrorMessage("Please select file that will be renamed");
-            return;
-        }
-        if (fileList.getSelectedIndices().length > 1) {
-            Utils.showErrorMessage("Cannot rename many files");
-            return;
-        }
+        try {
+            if (fileList.getSelectedIndices().length == 0) {
+                Utils.showErrorMessage("Please select file that will be renamed");
+                return;
+            }
 
-        RFile selectedFile = fileList.getSelectedValue();
-        String name = (String) JOptionPane.showInputDialog(this, "Please write new name for file",
-                "Rename", QUESTION_MESSAGE, null, null,
-                selectedFile.getName());
-        System.out.println("New file name = [" + name + "]");
+            if (fileList.getSelectedIndices().length > 1) {
+                Utils.showErrorMessage("Cannot rename many files");
+                return;
+            }
+
+            RFile selectedFile = fileList.getSelectedValue();
+            String newName = (String) JOptionPane.showInputDialog(this, "Enter new name for file",
+                    "Rename", QUESTION_MESSAGE, null, null,
+                    selectedFile.getName());
+            if (newName == null) {
+                return;
+            }
+
+            if (newName.equals(selectedFile.getName())) {
+                System.out.println("Skip renaming, because new file name is equals to old file name");
+                return;
+            }
+
+            newName = newName.trim();
+            if (newName.isEmpty() || newName.contains("?") || newName.contains("\\") || newName.contains("/")) {
+                Utils.showErrorMessage("Wrong name [" + newName + "]. It should not be empty and should not contain special characters");
+                return;
+            }
+
+            System.out.println("New file name = [" + newName + "]");
+            ListenableFutureTask<Boolean> result = fileProvider.renameFile(selectedFile, newName);
+            Boolean resultFlag = result.get();
+            if (Objects.equals(resultFlag, Boolean.FALSE)) {
+                Utils.showErrorMessage("Cannot rename file");
+                return;
+            }
+
+            fillFileList();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        } catch (ExecutionException ex) {
+            ex.printStackTrace();
+            Utils.showErrorMessage("Cannot rename file\n[" + ex.getMessage() + "]");
+        }
     }
 }
