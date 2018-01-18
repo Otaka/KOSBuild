@@ -22,7 +22,7 @@ public abstract class AbstractFileProvider {
 
     public abstract ListenableFutureTask<List<RFile>> listRoots();
 
-    public abstract ListenableFutureTask<Boolean> removeFile(RFile folder);
+    public abstract ListenableFutureTask<Boolean> removeFile(List<RFile> folder);
 
     public abstract ListenableFutureTask<Boolean> renameFile(RFile file, String newName);
     public abstract ListenableFutureTask<Boolean> createFolder(RFile currentFolder, String newFolderName);

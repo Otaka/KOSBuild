@@ -59,9 +59,9 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     }
 
     @Override
-    public ListenableFutureTask<Boolean> removeFile(RFile file) {
+    public ListenableFutureTask<Boolean> removeFile(List<RFile> file) {
         ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
-        File localFileObject = createFileFromRFile(file);
+        File localFileObject = createFileFromRFile(file.get(0));
         boolean result = FileUtils.deleteQuietly(localFileObject);
         future.finishFutureAndReturnData(result);
         return future;
@@ -80,8 +80,8 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     public ListenableFutureTask<Boolean> createFolder(RFile currentFolder, String newFolderName) {
         ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
         File localFileObject = createFileFromRFile(currentFolder);
-        File newFolderFileObject=new File(localFileObject, newFolderName);
-        boolean result=newFolderFileObject.mkdirs();
+        File newFolderFileObject = new File(localFileObject, newFolderName);
+        boolean result = newFolderFileObject.mkdirs();
         future.finishFutureAndReturnData(result);
         return future;
     }

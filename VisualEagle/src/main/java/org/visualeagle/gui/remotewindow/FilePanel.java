@@ -187,9 +187,9 @@ public class FilePanel extends JPanel {
         fileProvider.setCurrentFolder(file);
         updatePathTextField();
     }
-    
-    private void updatePathTextField(){
-        RFile currentFolder=fileProvider.getCurrentFolder();
+
+    private void updatePathTextField() {
+        RFile currentFolder = fileProvider.getCurrentFolder();
         if (currentFolder != null) {
             pathTextField.setText(currentFolder.getFullPath());
         } else {
@@ -279,21 +279,21 @@ public class FilePanel extends JPanel {
             if (newName == null) {
                 return;
             }
-            
+
             newName = newName.trim();
             if (newName.isEmpty() || newName.contains("?") || newName.contains("\\") || newName.contains("/")) {
                 Utils.showErrorMessage("Wrong name [" + newName + "]. It should not be empty and should not contain special characters");
                 return;
             }
-            
+
             ListenableFutureTask<Boolean> result = fileProvider.createFolder(fileProvider.getCurrentFolder(), newName);
-            
+
             Boolean resultFlag = result.get();
             if (Objects.equals(resultFlag, Boolean.FALSE)) {
-                Utils.showErrorMessage("Cannot create folder with name ["+newName+"]");
+                Utils.showErrorMessage("Cannot create folder with name [" + newName + "]");
                 return;
             }
-            
+
             fillFileList();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -301,7 +301,13 @@ public class FilePanel extends JPanel {
     }
 
     private void deleteSelectedFiles(ActionEvent e) {
+        if (fileList.getSelectedIndices().length == 0) {
+            Utils.showErrorMessage("Please select files that should be removed");
+            return;
+        }
 
+        List<RFile>files= fileList.getSelectedValuesList();
+        fileProvider.removeFile(files);
     }
 
     private void renameSelectedFile(ActionEvent e) {
