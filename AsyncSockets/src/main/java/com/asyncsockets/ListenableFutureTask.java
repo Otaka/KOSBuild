@@ -11,6 +11,7 @@ public class ListenableFutureTask<T> extends FutureTask<T> {
 
     private volatile Callback<T> onFinish;
     private volatile Callback<Throwable> onError;
+    private volatile Callback<ProgressData> onProgress;
 
     public ListenableFutureTask(Callable callable) {
         super(callable);
@@ -25,6 +26,21 @@ public class ListenableFutureTask<T> extends FutureTask<T> {
         super(callable);
         this.onFinish = onFinish;
         this.onError = onError;
+    }
+
+    public ListenableFutureTask(Callable callable, Callback<T> onFinish, Callback<Throwable> onError, Callback<ProgressData> onProgress) {
+        super(callable);
+        this.onFinish = onFinish;
+        this.onError = onError;
+        this.onProgress = onProgress;
+    }
+
+    public void progress(Object max, Object current) {
+        if (onProgress != null) {
+            SocketsManager.eventsExecutor.execute(() -> {
+                onProgress.complete(new ProgressData(max, current));
+            });
+        }
     }
 
     public void setOnFinish(Callback<T> onFinish) {
