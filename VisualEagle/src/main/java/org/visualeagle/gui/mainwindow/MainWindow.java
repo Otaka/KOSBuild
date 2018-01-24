@@ -27,6 +27,8 @@ import org.visualeagle.project.projectloaders.ProjectLoader;
 import org.visualeagle.project.projectloaders.ProjectStructure;
 import org.visualeagle.utils.ConfigNames;
 import org.visualeagle.utils.ImageManager;
+import org.visualeagle.utils.LongRunningTask;
+import org.visualeagle.utils.LongRunningTaskWithDialog;
 import org.visualeagle.utils.Lookup;
 import org.visualeagle.utils.Utils;
 import org.visualeagle.utils.WindowLocationService;
@@ -80,6 +82,30 @@ public class MainWindow extends JFrame {
             createEditorWindow();
             createLogWindow();
         });
+        SwingUtilities.invokeLater(() -> {
+            LongRunningTaskWithDialog lg = new LongRunningTaskWithDialog(this, new LongRunningTask() {
+                @Override
+                public Object run(LongRunningTaskWithDialog dialog) {
+                    for (int i = 0; i < 10; i++) {
+                        dialog.setInformationMessage("some text " + i);
+                        try {
+                            Thread.sleep(800);
+                        } catch (InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+
+                    return "343";
+                }
+
+                @Override
+                public void onDone(LongRunningTaskWithDialog dialog, Object result) {
+                    System.out.println("Done "+result);
+                }
+
+            });
+            lg.start();
+        });
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
@@ -132,7 +158,7 @@ public class MainWindow extends JFrame {
 
         RemoteCommanderWindow remoteCommanderWindow = new RemoteCommanderWindow();
         remoteCommanderWindow.setVisible(true);
-         
+
     }
 
     private void openProject() {
