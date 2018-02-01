@@ -55,8 +55,6 @@ public class RemoteCommanderWindow extends JDialog {
 
     private FilePanel createFilePanel() {
         FilePanel filePanel = new FilePanel();
-        filePanel.setOpaque(true);
-        filePanel.setBackground(Color.RED);
         return filePanel;
     }
 }

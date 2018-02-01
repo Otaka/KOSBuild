@@ -82,30 +82,8 @@ public class MainWindow extends JFrame {
             createEditorWindow();
             createLogWindow();
         });
-        SwingUtilities.invokeLater(() -> {
-            LongRunningTaskWithDialog lg = new LongRunningTaskWithDialog(this, new LongRunningTask() {
-                @Override
-                public Object run(LongRunningTaskWithDialog dialog) {
-                    for (int i = 0; i < 10; i++) {
-                        dialog.setInformationMessage("some text " + i);
-                        try {
-                            Thread.sleep(800);
-                        } catch (InterruptedException ex) {
-                            ex.printStackTrace();
-                        }
-                    }
 
-                    return "343";
-                }
-
-                @Override
-                public void onDone(LongRunningTaskWithDialog dialog, Object result) {
-                    System.out.println("Done "+result);
-                }
-
-            });
-            lg.start();
-        });
+        //runTestProgressDialogWindow();
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
@@ -115,10 +93,10 @@ public class MainWindow extends JFrame {
                 System.exit(0);
             }
         });
+
         mainMenu = new MainMenu();
         setJMenuBar(mainMenu.constructMainMenu());
 
-        //  Lookup.get().put(ConnectionManager.class, new ConnectionManager().start());
         RemoteConnectionManager remoteConnectionManager = new RemoteConnectionManager();
         Lookup.get().put(RemoteConnectionManager.class, remoteConnectionManager);
         statusPanel = new StatusPanel();
@@ -265,5 +243,49 @@ public class MainWindow extends JFrame {
         Lookup.get().get(ProjectManager.class).closeCurrentProject();
         Lookup.get().put(ConfigNames.PROJECT_IS_LOADED, Boolean.FALSE);
         return true;
+    }
+
+    private void runTestProgressDialogWindow() {
+        SwingUtilities.invokeLater(() -> {
+            LongRunningTaskWithDialog lg = new LongRunningTaskWithDialog(this, new LongRunningTask() {
+                @Override
+                public Object run(LongRunningTaskWithDialog dialog) {
+                    for (int i = 0; i <= 10; i++) {
+                        if (dialog.isCanceled()) {
+                            return false;
+                        }
+
+                        long max = 10_000_000_000l;
+                        long delta = max / 1000;
+  
+                        dialog.setMaxProgressValue(max);
+                        for (int j = 0; j < 1000; j++) {
+
+                            dialog.setInformationMessage1("some text " + i + "_" + j);
+                            dialog.setInformationMessage2("" + i + "_" + j);
+                            dialog.addCurrentProgressValue(delta);
+                            dialog.setTextInProgressBar("" + i + "%" + j);
+
+                            try {
+                                Thread.sleep(3);
+                            } catch (InterruptedException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    }
+
+                    return "343";
+                }
+
+                @Override
+                public void onDone(LongRunningTaskWithDialog dialog, Object result) {
+                    System.out.println("Done " + result);
+                }
+            });
+
+            lg.setMaxProgressValue(10);
+            lg.setDialogTitle("Test progress bar dialog");
+            lg.start();
+        });
     }
 }

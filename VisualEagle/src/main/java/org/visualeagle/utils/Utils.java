@@ -4,16 +4,52 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import javax.swing.JOptionPane;
+import org.apache.commons.lang3.StringUtils;
+import org.visualeagle.gui.remotewindow.fileprovider.RFile;
 
 /**
  * @author Dmitry
  */
 public class Utils {
+
+    private static final long K = 1024;
+    private static final long M = K * K;
+    private static final long G = M * K;
+    private static final long T = G * K;
+
+    public static String convertToStringRepresentation(final long value) {
+        if(value==0){
+            return "0 B";
+        }
+        final long[] dividers = new long[]{T, G, M, K, 1};
+        final String[] units = new String[]{"TB", "GB", "MB", "KB", "B"};
+        if (value < 1) {
+            throw new IllegalArgumentException("Invalid file size: " + value);
+        }
+        String result = null;
+        for (int i = 0; i < dividers.length; i++) {
+            final long divider = dividers[i];
+            if (value >= divider) {
+                result = format(value, divider, units[i]);
+                break;
+            }
+        }
+        return result;
+    }
+
+    private static String format(final long value,
+            final long divider,
+            final String unit) {
+        final double result
+                = divider > 1 ? (double) value / (double) divider : (double) value;
+        return new DecimalFormat("#,##0.#").format(result) + " " + unit;
+    }
 
     public static int[] generateRangeIntArray(int start, int size) {
         int[] result = new int[size];
@@ -94,13 +130,27 @@ public class Utils {
 
         return newImage;
     }
-    
-    private static Executor executor=Executors.newCachedThreadPool();
-    public static void runInThread(Runnable runnable){
+
+    private static Executor executor = Executors.newCachedThreadPool();
+
+    public static void runInThread(Runnable runnable) {
         executor.execute(runnable);
     }
-    
-    public static void showErrorMessage(String message){
-        JOptionPane.showMessageDialog(null, message,"Error",JOptionPane.ERROR_MESSAGE);
+
+    public static void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public static String[] splitFilePath(RFile file) {
+        String path = file.getFullPath();
+        path = path.replace('\\', '/').replace("//", "/").replace("./", "");
+
+        String[] parts = StringUtils.splitPreserveAllTokens(path, '/');
+        if (parts.length > 0) {
+            if ("".equals(parts[parts.length - 1])) {
+                parts = Arrays.copyOfRange(parts, 0, parts.length - 1);
+            }
+        }
+        return parts;
     }
 }

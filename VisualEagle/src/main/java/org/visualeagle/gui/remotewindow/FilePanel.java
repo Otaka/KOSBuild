@@ -10,6 +10,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,11 +35,15 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.visualeagle.gui.remotewindow.fileprovider.AbstractFileProvider;
 import org.visualeagle.gui.remotewindow.fileprovider.FileSystemType;
 import org.visualeagle.gui.remotewindow.fileprovider.LocalFileSystemFileProvider;
 import org.visualeagle.utils.ImageManager;
+import org.visualeagle.utils.LongRunningTask;
+import org.visualeagle.utils.LongRunningTaskWithDialog;
 import org.visualeagle.utils.Utils;
 
 public class FilePanel extends JPanel {
@@ -89,7 +95,10 @@ public class FilePanel extends JPanel {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     JList list = (JList) e.getSource();
                     int row = list.locationToIndex(e.getPoint());
-                    list.setSelectedIndex(row);
+                    //first check if this row is in the list of already selected rows
+                    if (!ArrayUtils.contains(list.getSelectedIndices(), row)) {
+                        list.setSelectedIndex(row);
+                    }
                 }
             }
         });
@@ -115,7 +124,7 @@ public class FilePanel extends JPanel {
         JPopupMenu popupMenu = new JPopupMenu();
 
         JMenuItem copy = new JMenuItem("Copy");
-        copy.addActionListener(this::copySelectedFiles);
+        copy.addActionListener(this::threadedCopySelectedFiles);
         popupMenu.add(copy);
 
         JMenuItem createFolder = new JMenuItem("Create Folder");
@@ -174,18 +183,41 @@ public class FilePanel extends JPanel {
         if (currentFolder != null) {
             RFile parentFile = currentFolder.getParentRFile();
             setCurrentFolder(parentFile);
-            fillFileList();
+            fillFileList(() -> {
+                String name = currentFolder.getName();
+                DefaultListModel listModel = (DefaultListModel) fileList.getModel();
+                for (int i = 0; i < listModel.size(); i++) {
+                    RFile file = (RFile) listModel.get(i);
+                    if (name.equals(file.getName())) {
+                        fileList.setSelectedIndex(i);
+                        fileList.ensureIndexIsVisible(i);
+                        break;
+                    }
+                }
+            });
         }
+    }
+
+    public void setOppositePanel(FilePanel oppositePanel) {
+        this.oppositePanel = oppositePanel;
+    }
+
+    public FilePanel getOppositePanel() {
+        return oppositePanel;
     }
 
     private void enterInDirectory(RFile file) {
         setCurrentFolder(file);
-        fillFileList();
+        fillFileList(null);
     }
 
     private void setCurrentFolder(RFile file) {
         fileProvider.setCurrentFolder(file);
         updatePathTextField();
+    }
+
+    public RFile getCurrentFolder() {
+        return fileProvider.getCurrentFolder();
     }
 
     private void updatePathTextField() {
@@ -205,7 +237,7 @@ public class FilePanel extends JPanel {
             fileProvidersCacheMap.put(fileSystemType, fileProvider);
         }
 
-        fillFileList();
+        fillFileList(null);
         updatePathTextField();
     }
 
@@ -216,7 +248,7 @@ public class FilePanel extends JPanel {
         };
     }
 
-    private void fillFileList() {
+    private void fillFileList(Runnable onAfterFileList) {
         DefaultListModel fileListModel = (DefaultListModel) fileList.getModel();
         ListenableFutureTask<List<RFile>> future;
         if (fileProvider.getCurrentFolder() == null) {
@@ -243,6 +275,9 @@ public class FilePanel extends JPanel {
                 if (!result.isEmpty()) {
                     fileList.setSelectedIndex(0);
                 }
+                if (onAfterFileList != null) {
+                    onAfterFileList.run();
+                }
             });
         });
     }
@@ -259,16 +294,38 @@ public class FilePanel extends JPanel {
         });
     }
 
-    public void setOppositePanel(FilePanel oppositePanel) {
-        this.oppositePanel = oppositePanel;
-    }
+    private void threadedCopySelectedFiles(ActionEvent e) {
+        if (fileList.getSelectedIndices().length == 0) {
+            Utils.showErrorMessage("Please select file that will be copied");
+            return;
+        }
+        if (oppositePanel.getCurrentFolder() == null) {
+            Utils.showErrorMessage("Current folder is not set in opposite panel");
+            return;
+        }
 
-    public FilePanel getOppositePanel() {
-        return oppositePanel;
-    }
+        List<RFile> selectedFiles = fileList.getSelectedValuesList();
 
-    private void copySelectedFiles(ActionEvent e) {
+        LongRunningTaskWithDialog longRunningTask = new LongRunningTaskWithDialog(SwingUtilities.getWindowAncestor(this), new LongRunningTask() {
+            @Override
+            public Object run(LongRunningTaskWithDialog dialog) throws Exception {
+                internalCopyFiles(dialog, selectedFiles);
+                return true;
+            }
 
+            @Override
+            public void onError(LongRunningTaskWithDialog dialog, Exception ex) {
+                System.out.println("Errors while copy files");
+            }
+
+            @Override
+            public void onDone(LongRunningTaskWithDialog dialog, Object result) {
+                oppositePanel.fillFileList(null);
+                System.out.println("Done copy files");
+            }
+        });
+
+        longRunningTask.start();
     }
 
     private void createFolder(ActionEvent e) {
@@ -294,20 +351,10 @@ public class FilePanel extends JPanel {
                 return;
             }
 
-            fillFileList();
+            fillFileList(null);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    private void deleteSelectedFiles(ActionEvent e) {
-        if (fileList.getSelectedIndices().length == 0) {
-            Utils.showErrorMessage("Please select files that should be removed");
-            return;
-        }
-
-        List<RFile>files= fileList.getSelectedValuesList();
-        fileProvider.removeFile(files);
     }
 
     private void renameSelectedFile(ActionEvent e) {
@@ -349,12 +396,212 @@ public class FilePanel extends JPanel {
                 return;
             }
 
-            fillFileList();
+            fillFileList(null);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         } catch (ExecutionException ex) {
             ex.printStackTrace();
             Utils.showErrorMessage("Cannot rename file\n[" + ex.getMessage() + "]");
         }
+    }
+
+    private void deleteSelectedFiles(ActionEvent e) {
+        if (fileList.getSelectedIndices().length == 0) {
+            Utils.showErrorMessage("Please select file that should be removed");
+            return;
+        }
+
+        List<RFile> selectedFiles = fileList.getSelectedValuesList();
+        LongRunningTaskWithDialog longRunningTask = new LongRunningTaskWithDialog(SwingUtilities.getWindowAncestor(this), new LongRunningTask() {
+            @Override
+            public Object run(LongRunningTaskWithDialog dialog) throws Exception {
+                internalDeleteFiles(dialog, selectedFiles);
+                return true;
+            }
+
+            @Override
+            public void onError(LongRunningTaskWithDialog dialog, Exception ex) {
+                System.out.println("Errors while delete files");
+            }
+
+            @Override
+            public void onDone(LongRunningTaskWithDialog dialog, Object result) {
+                fillFileList(null);
+                System.out.println("Done delete files");
+            }
+        });
+
+        longRunningTask.start();
+    }
+
+    private void internalDeleteFiles(LongRunningTaskWithDialog dialog, List<RFile> selectedFiles) throws InterruptedException, ExecutionException {
+        dialog.setDialogTitle("Delete file" + (selectedFiles.size() == 1 ? "" : "s"));
+        dialog.setIndeterminate(true);
+        dialog.setInformationMessage1("Obtain files");
+        dialog.setInformationMessage1("");
+
+        List<RFile> filesToRemove = collectFiles(selectedFiles, null, dialog, false);
+        dialog.setDialogTitle("Delete file" + (filesToRemove.size() == 1 ? "" : "s"));
+        dialog.setIndeterminate(false);
+        dialog.setMaxProgressValue(filesToRemove.size());
+        dialog.setCurrentProgressValue(0);
+        dialog.setInformationMessage2("0/" + filesToRemove.size());
+        for (int i = 0; i < filesToRemove.size(); i++) {
+            if (dialog.isCanceled()) {
+                return;
+            }
+
+            RFile fileToRemove = filesToRemove.get(i);
+            dialog.setInformationMessage1(fileToRemove.getName());
+            fileToRemove.getFileProvider().removeFile(Arrays.asList(fileToRemove)).waitForCompletion();
+            dialog.setInformationMessage2("" + (i + 1) + "/" + filesToRemove.size());
+            dialog.setCurrentProgressValue(i);
+        }
+    }
+
+    private void internalCopyFiles(LongRunningTaskWithDialog dialog, List<RFile> selectedFiles) throws InterruptedException, ExecutionException {
+        dialog.setDialogTitle("Copy file" + (selectedFiles.size() == 1 ? "" : "s"));
+        dialog.setIndeterminate(true);
+        dialog.setInformationMessage1("Obtain files");
+        dialog.setInformationMessage1("");
+
+        List<RFile> filesToCopy = collectFiles(selectedFiles, null, dialog, true);
+        dialog.setDialogTitle("Copy file" + (filesToCopy.size() == 1 ? "" : "s"));
+        long totalSize = 0;
+        for (RFile file : filesToCopy) {
+            totalSize += file.getSize();
+        }
+
+        dialog.setIndeterminate(false);
+        dialog.setMaxProgressValue(totalSize);
+        dialog.setCurrentProgressValue(0);
+        RFile destinationFolder = oppositePanel.getCurrentFolder();
+        MutableLong currentCopiedBytesSize = new MutableLong(0);
+        dialog.setInformationMessage2("0/" + filesToCopy.size());
+        boolean skipAll = false;
+        for (int i = 0; i < filesToCopy.size(); i++) {
+            if (dialog.isCanceled()) {
+                return;
+            }
+            RFile fileToCopy = filesToCopy.get(i);
+            dialog.setInformationMessage1(Utils.convertToStringRepresentation(fileToCopy.getSize()) + "  " + fileToCopy.getName());
+            while (true) {
+                long currentBytesSizeValue = currentCopiedBytesSize.longValue();
+                try {
+                    copyFile(dialog, fileToCopy, destinationFolder, totalSize, currentCopiedBytesSize);
+                    break;
+                } catch (Exception ex) {
+                    if (skipAll) {
+                        break;
+                    }
+                    Object[] options = new Object[]{"Abort", "Skip", "Retry", "Skip All"};
+                    int result = JOptionPane.showOptionDialog(this, "Cannot remove file " + ex.getMessage(), "Cannot remove file",
+                            JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE, null, options, null);
+                    if (result == 0) {//abort
+                        return;
+                    }
+                    if (result == 1) {//skip
+                        break;
+                    }
+                    if (result == 2) {//retry
+                        currentCopiedBytesSize.setValue(currentBytesSizeValue);
+                    }
+                    if (result == 3) {//skip all
+                        skipAll = true;
+                        break;
+                    }
+                }
+            }
+
+            dialog.setInformationMessage2("" + (i + 1) + "/" + filesToCopy.size());
+        }
+    }
+
+    private void copyFile(LongRunningTaskWithDialog dialog, RFile fileToCopy, RFile destination, long totalSize, MutableLong currentCopiedSize) throws InterruptedException, ExecutionException {
+        String[] currentDirSplitted = Utils.splitFilePath(getCurrentFolder());
+        String[] fileToCopySplitted = Utils.splitFilePath(fileToCopy);
+        String[] partsWithoutParentDirAndName = Arrays.copyOfRange(fileToCopySplitted, currentDirSplitted.length, fileToCopySplitted.length - 1);
+        String fileName = fileToCopySplitted[fileToCopySplitted.length - 1];
+        RFile newFile = createDestinationFilePath(destination.getFileProvider(), Utils.splitFilePath(destination), partsWithoutParentDirAndName, fileName, fileToCopy.isDirectory(), fileToCopy.getSize());
+        AbstractFileProvider destinationProvider = destination.getFileProvider();
+        if (newFile.isDirectory()) {
+            if (!destinationProvider.exists(newFile).get()) {
+                boolean result = destinationProvider.createFolder(newFile.getParentRFile(), fileName).get();
+            }
+        } else {
+            byte[] buffer = new byte[100 * 1024];
+            AbstractFileProvider sourceProvider = fileToCopy.getFileProvider();
+            int readHandle = sourceProvider.openFileForReading(fileToCopy).get();
+            int writeHandle = destinationProvider.openFileForWriting(newFile, false).get();
+            while (true) {
+                if (dialog.isCanceled()) {
+                    break;
+                }
+
+                int count = sourceProvider.readFromFile(readHandle, buffer).get();
+                if (count <= 0) {
+                    break;
+                }
+
+                if (dialog.isCanceled()) {
+                    break;
+                }
+
+                destinationProvider.writeToFile(writeHandle, buffer, count).waitForCompletion();
+                currentCopiedSize.add(count);
+                dialog.setCurrentProgressValue(currentCopiedSize.longValue());
+                dialog.setTextInProgressBar(Utils.convertToStringRepresentation(currentCopiedSize.longValue()) + "/" + Utils.convertToStringRepresentation(totalSize));
+            }
+
+            ListenableFutureTask<Boolean> destCloseFuture = destinationProvider.close(writeHandle);
+            ListenableFutureTask<Boolean> sourceCloseFuture = sourceProvider.close(readHandle);
+            destCloseFuture.waitForCompletion();
+            sourceCloseFuture.waitForCompletion();
+        }
+    }
+
+    private RFile createDestinationFilePath(AbstractFileProvider destinationFileProvider, String[] partsOfDestinationDir, String[] partOfOriginalNameAfterParentDir, String fileName, boolean isDirectory, long size) {
+        String separator = destinationFileProvider.separator();
+        StringBuilder path = new StringBuilder();
+
+        for (String part : partsOfDestinationDir) {
+            path.append(part);
+            path.append(separator);
+        }
+
+        for (String part : partOfOriginalNameAfterParentDir) {
+            path.append(part);
+            path.append(separator);
+        }
+
+        RFile newRFile = new RFile(path.toString(), fileName, size, isDirectory, 0, destinationFileProvider);
+        return newRFile;
+    }
+
+    private List<RFile> collectFiles(List<RFile> roots, List<RFile> output, LongRunningTaskWithDialog dialog, boolean putFolderAtFront) throws InterruptedException, ExecutionException {
+        if (output == null) {
+            output = new ArrayList<>();
+        }
+        for (RFile fileToCopy : roots) {
+
+            if (!fileToCopy.isDirectory()) {
+                output.add(fileToCopy);
+            } else {
+                RFile folder = fileToCopy;
+                if (putFolderAtFront) {
+                    output.add(folder);
+                }
+                ListenableFutureTask<List<RFile>> childFuture = fileProvider.listFiles(fileToCopy);
+                List<RFile> children = childFuture.get();
+                collectFiles(children, output, dialog, putFolderAtFront);
+                if (!putFolderAtFront) {
+                    output.add(folder);
+                }
+            }
+
+            dialog.setInformationMessage1("Obtain files: " + output.size());
+        }
+
+        return output;
     }
 }

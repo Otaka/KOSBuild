@@ -2,10 +2,23 @@ package org.visualeagle.gui.remotewindow.fileprovider;
 
 import com.asyncsockets.ListenableFutureTask;
 import com.asyncsockets.ListenableFutureTaskWithData;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 /**
  * @author sad
@@ -83,6 +96,149 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         File newFolderFileObject = new File(localFileObject, newFolderName);
         boolean result = newFolderFileObject.mkdirs();
         future.finishFutureAndReturnData(result);
+        return future;
+    }
+
+    @Override
+    public ListenableFutureTask<Boolean> exists(RFile file) {
+        ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
+        File localFileObject = createFileFromRFile(file);
+        boolean result = localFileObject.exists();
+        future.finishFutureAndReturnData(result);
+        return future;
+    }
+
+    @Override
+    public String separator() {
+        return "/";
+    }
+
+    private Map<Integer, InputStream> filesOpenedForReadingMap = new HashMap<>();
+    private Map<Integer, OutputStream> filesOpenedForWritingMap = new HashMap<>();
+    private AtomicInteger handleSequence = new AtomicInteger(1);
+
+    @Override
+    public ListenableFutureTask<Integer> openFileForReading(RFile file) {
+        ListenableFutureTaskWithData<Integer> future = new ListenableFutureTaskWithData<>();
+        File localFileObject = createFileFromRFile(file);
+        if (!localFileObject.exists()) {
+            future.finishFutureAndReturnException(new FileNotFoundException("File [" + file.getFullPath() + "] does not exists"));
+            return future;
+        }
+
+        try {
+            InputStream stream = new BufferedInputStream(new FileInputStream(localFileObject));
+            int handle = handleSequence.incrementAndGet();
+            filesOpenedForReadingMap.put(handle, stream);
+            future.finishFutureAndReturnData(handle);
+        } catch (FileNotFoundException ex) {
+            future.finishFutureAndReturnException(new FileNotFoundException("File [" + file.getFullPath() + "] does not exists"));
+        }
+
+        return future;
+    }
+
+    @Override
+    public ListenableFutureTask<Integer> openFileForWriting(RFile file, boolean append) {
+        ListenableFutureTaskWithData<Integer> future = new ListenableFutureTaskWithData<>();
+        File localFileObject = createFileFromRFile(file);
+        try {
+            OutputStream stream = new BufferedOutputStream(new FileOutputStream(localFileObject, append));
+            int handle = handleSequence.incrementAndGet();
+            filesOpenedForWritingMap.put(handle, stream);
+            future.finishFutureAndReturnData(handle);
+        } catch (FileNotFoundException ex) {
+            future.finishFutureAndReturnException(new FileNotFoundException("File [" + file.getFullPath() + "] does not exists"));
+        }
+
+        return future;
+    }
+
+    @Override
+    public ListenableFutureTask<Boolean> close(int handle) {
+        ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
+        Closeable toClose = null;
+        InputStream rStream = filesOpenedForReadingMap.get(handle);
+        if (rStream != null) {
+            filesOpenedForReadingMap.remove(handle);
+            toClose = rStream;
+        }
+
+        OutputStream wStream = filesOpenedForWritingMap.get(handle);
+        if (wStream != null) {
+            filesOpenedForWritingMap.remove(handle);
+            toClose = wStream;
+        }
+
+        try {
+            toClose.close();
+            future.finishFutureAndReturnData(Boolean.TRUE);
+        } catch (IOException ex) {
+            future.finishFutureAndReturnException(ex);
+        }
+
+        return future;
+    }
+
+    @Override
+    public ListenableFutureTask<Boolean> writeToFile(int handle, byte[] buffer,int count) {
+        ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
+        OutputStream stream = filesOpenedForWritingMap.get(handle);
+        if (stream == null) {
+            future.finishFutureAndReturnException(new IllegalArgumentException("Cannot find opened handle to writing file [" + handle + "]"));
+            return future;
+        }
+
+        if (buffer == null) {
+            future.finishFutureAndReturnException(new IllegalArgumentException("Cannot write null buffer to file"));
+            return future;
+        }
+
+        if (buffer.length == 0) {
+            future.finishFutureAndReturnData(Boolean.TRUE);
+            return future;
+        }
+
+        try {
+            for(int i=0;i<count;i++){
+                stream.write(buffer[i]&0xFF);
+            }
+
+            future.finishFutureAndReturnData(Boolean.TRUE);
+        } catch (IOException ex) {
+            future.finishFutureAndReturnException(ex);
+        }
+
+        return future;
+    }
+
+    @Override
+    public ListenableFutureTask<Integer> readFromFile(int handle, byte[] buffer) {
+        ListenableFutureTaskWithData<Integer> future = new ListenableFutureTaskWithData<>();
+
+        InputStream stream = filesOpenedForReadingMap.get(handle);
+        if (stream == null) {
+            future.finishFutureAndReturnException(new IllegalArgumentException("Cannot find opened handle to reading file [" + handle + "]"));
+            return future;
+        }
+
+        if (buffer == null) {
+            future.finishFutureAndReturnException(new IllegalArgumentException("Cannot read file to null buffer"));
+            return future;
+        }
+
+        if (buffer.length == 0) {
+            future.finishFutureAndReturnData(0);
+            return future;
+        }
+
+        try {
+            int readBytesCount = IOUtils.read(stream, buffer);
+            future.finishFutureAndReturnData(readBytesCount);
+        } catch (IOException ex) {
+            future.finishFutureAndReturnException(ex);
+        }
+
         return future;
     }
 }
