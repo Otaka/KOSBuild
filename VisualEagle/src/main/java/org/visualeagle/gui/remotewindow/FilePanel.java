@@ -41,6 +41,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.visualeagle.gui.remotewindow.fileprovider.AbstractFileProvider;
 import org.visualeagle.gui.remotewindow.fileprovider.FileSystemType;
 import org.visualeagle.gui.remotewindow.fileprovider.LocalFileSystemFileProvider;
+import org.visualeagle.gui.remotewindow.fileprovider.RemoteFileSystemFileProvider;
 import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.LongRunningTask;
 import org.visualeagle.utils.LongRunningTaskWithDialog;
@@ -233,7 +234,7 @@ public class FilePanel extends JPanel {
         if (fileProvidersCacheMap.containsKey(fileSystemType)) {
             fileProvider = fileProvidersCacheMap.get(fileSystemType);
         } else {
-            fileProvider = fileSystemType == FileSystemType.LOCAL ? new LocalFileSystemFileProvider() : new LocalFileSystemFileProvider();
+            fileProvider = fileSystemType == FileSystemType.LOCAL ? new LocalFileSystemFileProvider() : new RemoteFileSystemFileProvider();
             fileProvidersCacheMap.put(fileSystemType, fileProvider);
         }
 
@@ -453,7 +454,37 @@ public class FilePanel extends JPanel {
 
             RFile fileToRemove = filesToRemove.get(i);
             dialog.setInformationMessage1(fileToRemove.getName());
-            fileToRemove.getFileProvider().removeFile(Arrays.asList(fileToRemove)).waitForCompletion();
+            boolean skipAll = false;
+            OUTER:
+            while (true) {
+                try {
+                    fileToRemove.getFileProvider().removeFile(Arrays.asList(fileToRemove)).waitForCompletion();
+                } catch (Exception ex) {
+                    if (skipAll) {
+                        break;
+                    }
+                    Object[] options = new Object[]{"Abort", "Skip", "Retry", "Skip All"};
+                    int result = JOptionPane.showOptionDialog(this, "Cannot remove file " + ex.getMessage(), "Cannot remove file",
+                            JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE, null, options, null);
+                    switch (result) {
+                        case 0:
+                            //abort
+                            return;
+                        case 1:
+                            //skip
+                            break OUTER;
+                        case 2:
+                            //retry
+                            break;
+                        case 3:
+                            //skip all
+                            skipAll = true;
+                            break OUTER;
+                        default:
+                            break;
+                    }
+                }
+            }
             dialog.setInformationMessage2("" + (i + 1) + "/" + filesToRemove.size());
             dialog.setCurrentProgressValue(i);
         }
@@ -495,7 +526,7 @@ public class FilePanel extends JPanel {
                         break;
                     }
                     Object[] options = new Object[]{"Abort", "Skip", "Retry", "Skip All"};
-                    int result = JOptionPane.showOptionDialog(this, "Cannot remove file " + ex.getMessage(), "Cannot remove file",
+                    int result = JOptionPane.showOptionDialog(this, "Cannot copy file " + ex.getMessage(), "Cannot copy file",
                             JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE, null, options, null);
                     if (result == 0) {//abort
                         return;
@@ -582,8 +613,8 @@ public class FilePanel extends JPanel {
         if (output == null) {
             output = new ArrayList<>();
         }
-        for (RFile fileToCopy : roots) {
 
+        for (RFile fileToCopy : roots) {
             if (!fileToCopy.isDirectory()) {
                 output.add(fileToCopy);
             } else {
@@ -591,6 +622,7 @@ public class FilePanel extends JPanel {
                 if (putFolderAtFront) {
                     output.add(folder);
                 }
+
                 ListenableFutureTask<List<RFile>> childFuture = fileProvider.listFiles(fileToCopy);
                 List<RFile> children = childFuture.get();
                 collectFiles(children, output, dialog, putFolderAtFront);

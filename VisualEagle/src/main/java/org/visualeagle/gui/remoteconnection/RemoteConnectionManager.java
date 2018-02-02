@@ -132,6 +132,12 @@ public class RemoteConnectionManager {
         return serverSocket != null;
     }
 
+    public SocketHandler getCurrentConnection() {
+        return currentConnection;
+    }
+
+    
+    
     public boolean isConnectionEstablished() {
         
         return isServerStarted()==true && currentConnection != null;

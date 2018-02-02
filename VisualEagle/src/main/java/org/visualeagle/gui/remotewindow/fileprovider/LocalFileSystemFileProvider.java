@@ -63,7 +63,6 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         List<RFile> roots = new ArrayList<>();
         for (File root : File.listRoots()) {
             String rootName = root.getPath();
-            // rootName = StringUtils.removeEnd(root.getPath(), "\\");//fix for windows
             roots.add(new RFile(null, rootName, root.length(), true, root.lastModified(), this));
         }
 
