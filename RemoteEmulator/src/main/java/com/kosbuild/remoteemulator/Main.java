@@ -1,5 +1,6 @@
 package com.kosbuild.remoteemulator;
 
+import com.asyncsockets.Request;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,16 +31,16 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         AbstractSession session;
         session = createClient(scanner);
-        int counter=0;
+        int counter = 0;
         while (true) {
             try {
                 session.initConnection();
                 new Main().mainLoop(session);
-            }catch(ConnectException ex){
-                if(counter==0|| counter%10==0){
+            } catch (ConnectException ex) {
+                if (counter == 0 || counter % 10 == 0) {
                     System.out.println("Cannot connect to server ");
                 }
-            }catch (Exception ex) {
+            } catch (Exception ex) {
                 ex.printStackTrace();
                 session.closeConnection();
             }
@@ -55,36 +56,42 @@ public class Main {
         return clientSession;
     }
 
+    public void processCommand(AbstractSession session) throws IOException {
+        String command = session.receiveString();
+        if (command.equalsIgnoreCase("PING")) {
+            processPing(session);
+        } else if (command.equalsIgnoreCase("LIST_ROOTS")) {
+            processListRoots(session);
+        } else if (command.equalsIgnoreCase("LIST_FLDER")) {
+            processListFolder(session);
+        } else if (command.equalsIgnoreCase("OPENFILE_R")) {
+            openFileForReading(session);
+        } else if (command.equalsIgnoreCase("OPENFILE_W")) {
+            openFileForWriting(session);
+        } else if (command.equalsIgnoreCase("WRITE_BUFF")) {
+            writeBufferToFile(session);
+        } else if (command.equalsIgnoreCase("READ__BUFF")) {
+            readBufferFromFile(session);
+        } else if (command.equalsIgnoreCase("CLOSE_FILE")) {
+            closeFile(session);
+        } else if (command.equalsIgnoreCase("DELET_FILE")) {
+            deleteFile(session);
+        } else if (command.equalsIgnoreCase("COPY__FILE")) {
+            copyFile(session);
+        } else if (command.equalsIgnoreCase("MOVE__FILE")) {
+            moveFile(session);
+        } else if (command.equalsIgnoreCase("RUN____APP")) {
+            runFile(session);
+        }
+    }
+
     public void mainLoop(AbstractSession session) throws IOException {
         Thread thread = new Thread() {
             @Override
             public void run() {
                 try {
                     while (true) {
-                        String command = session.receiveString();
-                        if (command.equalsIgnoreCase("PING")) {
-                            processPing(session);
-                        } else if (command.equalsIgnoreCase("LIST_FLDER")) {
-                            processListFolder(session);
-                        } else if (command.equalsIgnoreCase("OPENFILE_R")) {
-                            openFileForReading(session);
-                        } else if (command.equalsIgnoreCase("OPENFILE_W")) {
-                            openFileForWriting(session);
-                        } else if (command.equalsIgnoreCase("WRITE_BUFF")) {
-                            writeBufferToFile(session);
-                        } else if (command.equalsIgnoreCase("READ__BUFF")) {
-                            readBufferFromFile(session);
-                        } else if (command.equalsIgnoreCase("CLOSE_FILE")) {
-                            closeFile(session);
-                        } else if (command.equalsIgnoreCase("DELET_FILE")) {
-                            deleteFile(session);
-                        } else if (command.equalsIgnoreCase("COPY__FILE")) {
-                            copyFile(session);
-                        } else if (command.equalsIgnoreCase("MOVE__FILE")) {
-                            moveFile(session);
-                        } else if (command.equalsIgnoreCase("RUN____APP")) {
-                            runFile(session);
-                        }
+                        processCommand(session);
                     }
                 } catch (SocketException ex) {
                     if (!ex.getMessage().equals("reset")) {
@@ -312,11 +319,19 @@ public class Main {
 
         session.sendString(OK);
         File[] filesArray = folder.listFiles();
+        session.sendInt(filesArray.length);
         for (File child : filesArray) {
             session.sendString(child.getName());
             session.sendInt(child.isDirectory() == true ? 0 : 1);
             session.sendLong(child.length());
             session.sendLong(child.lastModified());
         }
+    }
+
+    private void processListRoots(AbstractSession session) throws IOException {
+        System.out.println("List roots");
+        session.sendString(OK);
+        session.sendInt(1);
+        session.sendString("/");
     }
 }
