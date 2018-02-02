@@ -219,6 +219,10 @@ public class SocketHandler {
         }
     }
 
+    public ListenableFutureTaskWithData<Request> writeWithExpectingResult(int commandId, byte[] buffer, long timeout, Callback onFinish, Callback onError) {
+        return writeWithExpectingResult(commandId, buffer,-1, timeout, onFinish, onError);
+    }
+
     public ListenableFutureTaskWithData<Request> writeWithExpectingResult(int commandId, byte[] buffer, int responseForRequest, long timeout, Callback onFinish, Callback onError) {
         if (!isClosed()) {
             int newRequestId = getNewRequestId();

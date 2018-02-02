@@ -91,4 +91,8 @@ public class ListenableFutureTask<T> extends FutureTask<T> {
             ex.printStackTrace();
         }
     }
+    
+    public void waitForCompletion() throws InterruptedException, ExecutionException{
+        get();
+    }
 }
