@@ -458,7 +458,10 @@ public class FilePanel extends JPanel {
             OUTER:
             while (true) {
                 try {
-                    fileToRemove.getFileProvider().removeFile(Arrays.asList(fileToRemove)).waitForCompletion();
+                    fileToRemove.getFileProvider().removeFile(fileToRemove).waitForCompletion();
+                    dialog.setInformationMessage2("" + (i + 1) + "/" + filesToRemove.size());
+                    dialog.setCurrentProgressValue(i + 1);
+                    break;
                 } catch (Exception ex) {
                     if (skipAll) {
                         break;
@@ -485,8 +488,6 @@ public class FilePanel extends JPanel {
                     }
                 }
             }
-            dialog.setInformationMessage2("" + (i + 1) + "/" + filesToRemove.size());
-            dialog.setCurrentProgressValue(i);
         }
     }
 

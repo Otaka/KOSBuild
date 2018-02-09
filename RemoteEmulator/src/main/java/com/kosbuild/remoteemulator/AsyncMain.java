@@ -200,7 +200,7 @@ public class AsyncMain {
     private void deleteFile(ByteArrayParserFormatter parser) throws IOException {
         String filePath = parser.receiveString();
         System.out.println("Delete file [" + filePath + "]");
-        File file = new File(filePath);
+        File file = new File(emulatedRemoteFolder+filePath);
         if (!file.exists()) {
             parser.sendString(ERROR);
             parser.sendString("File does not exists");
@@ -213,8 +213,6 @@ public class AsyncMain {
             parser.sendString(ERROR);
             parser.sendString("Cannot remove file " + filePath);
         }
-
-        parser.sendString(OK);
     }
 
     private void closeFile(ByteArrayParserFormatter parser) throws IOException {
