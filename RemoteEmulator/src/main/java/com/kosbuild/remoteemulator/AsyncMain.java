@@ -30,13 +30,15 @@ public class AsyncMain {
 
     private final static int HANDSHAKE_COMMAND = 1;
     private final static int COMMAND_COMMAND = 0;
-    private final String ERROR = "0";
+    private final String ERROR = "5";
     private final String OK = "1";
     
       
     private int fileDescriptor=0;
     private Map<Long, OutputStream>filesOpenedForWriting=new HashMap<>();
     private Map<Long, InputStream>filesOpenedForReading=new HashMap<>();
+    
+    private String emulatedRemoteFolder="d:/temp/remoteFileSystem";
     
 
     public static void main(String[] args) throws IOException, UnknownHostException, InterruptedException {
@@ -97,8 +99,6 @@ public class AsyncMain {
             int part2 = Integer.parseInt(parts[1]);
             request.writeInResponse(HANDSHAKE_COMMAND, ("" + (part1 + part2)).getBytes(StandardCharsets.UTF_8), null, null);
         } else if (request.getCommand() == COMMAND_COMMAND) {
-            String command = request.getResponseAsString();
-            System.out.println("Received command " + command);
             byte[] result = processCommand(request);
             if (result != null) {
                 request.writeInResponse(COMMAND_COMMAND, result);
@@ -327,7 +327,10 @@ public class AsyncMain {
 
     private void processListFolder(ByteArrayParserFormatter parser) throws IOException {
         String folderPath = parser.receiveString();
+        
         System.out.println("List folder " + folderPath);
+        folderPath=emulatedRemoteFolder+folderPath;
+        System.out.println("Emulated folder " + folderPath);
         File folder = new File(folderPath);
         if (!folder.exists()) {
             parser.sendString(ERROR);
@@ -340,7 +343,7 @@ public class AsyncMain {
         parser.sendInt(filesArray.length);
         for (File child : filesArray) {
             parser.sendString(child.getName());
-            parser.sendInt(child.isDirectory() == true ? 0 : 1);
+            parser.sendBoolean(child.isDirectory());
             parser.sendLong(child.length());
             parser.sendLong(child.lastModified());
         }
@@ -349,7 +352,7 @@ public class AsyncMain {
     private void processListRoots(ByteArrayParserFormatter parser) throws IOException {
         System.out.println("List roots");
         parser.sendString(OK);
-        parser.sendInt(1);
-        parser.sendString("/");
+        parser.sendInt(1);//count of strings
+        parser.sendString("/");//actual root folder
     }
 }

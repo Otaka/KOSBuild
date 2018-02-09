@@ -12,8 +12,10 @@ public class ByteArrayParserFormatter {
 
     private ByteArrayInputStream inputStream;
     private ByteArrayFormatter formatter;
+    
     public ByteArrayParserFormatter(byte[] array) {
-        inputStream = new ByteInputStream();
+        inputStream = new ByteArrayInputStream(array);
+        formatter=new ByteArrayFormatter(100);
     }
 
     public byte[] receive(int count) throws IOException {
