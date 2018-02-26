@@ -172,6 +172,29 @@ public class AsyncMain {
         parser.sendString(OK);
     }
 
+    private void renameFile(ByteArrayParserFormatter parser) throws IOException {
+        String fileSource = parser.receiveString();
+        String newFileName = parser.receiveString();
+        System.out.println("Rename file [" + fileSource + "] -> [" + newFileName + "]");
+        File sourceFile = new File(fileSource);
+        if (!sourceFile.exists()) {
+            parser.sendString(ERROR);
+            parser.sendString("Source file does not exists");
+            return;
+        }
+        
+        File destFile = new File(sourceFile.getParent(),newFileName);
+        if (destFile.exists()) {
+            parser.sendString(ERROR);
+            parser.sendString("Desination file already exists");
+            return;
+        }
+
+        sourceFile.renameTo(destFile);
+
+        parser.sendString(OK);
+    }
+
     private void moveFile(ByteArrayParserFormatter parser) throws IOException {
         String fileSource = parser.receiveString();
         String fileDestination = parser.receiveString();

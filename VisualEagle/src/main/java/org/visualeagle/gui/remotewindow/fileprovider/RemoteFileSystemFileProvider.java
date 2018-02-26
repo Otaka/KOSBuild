@@ -172,7 +172,41 @@ public class RemoteFileSystemFileProvider extends AbstractFileProvider {
 
     @Override
     public ListenableFutureTask<Boolean> renameFile(RFile file, String newName) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try {
+            ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
+            RemoteConnectionManager connectionManager = getConnectionManager(future);
+            ByteArrayFormatter byteFormatter = new ByteArrayFormatter();
+            byteFormatter.sendString("DELET_FILE");
+            byteFormatter.sendString(folder.getFullPath());
+            connectionManager.getCurrentConnection().writeWithExpectingResult(0, byteFormatter.getBytes(), defaultTimeout, (requestObject) -> {
+                try {
+                    ByteArrayParserFormatter parser = new ByteArrayParserFormatter(((Request) requestObject).getBytes());
+                    String ok = parser.receiveString();
+                    if (ok.equals(ERROR)) {
+                        String errorMessage = parser.receiveString();
+                        future.finishFutureAndReturnException(new IllegalArgumentException("Client send a message [" + errorMessage + "]"));
+                        System.out.println("Client send a message [" + errorMessage + "]");
+                        return;
+                    } else if (!ok.equals(OK)) {
+                        future.finishFutureAndReturnException(new IllegalArgumentException("Client has responded not with [OK], but with [" + ok + "]"));
+                        return;
+                    }
+
+                    future.finishFutureAndReturnData(Boolean.TRUE);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                    future.finishFutureAndReturnException(ex);
+                }
+            }, (a) -> {
+                SwingUtilities.invokeLater(() -> {
+                    Utils.showErrorMessage("Error while try to get list of root folders in remote file system [" + a + "]");
+                });
+            });
+            return future;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
