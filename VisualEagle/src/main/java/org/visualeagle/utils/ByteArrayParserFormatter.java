@@ -1,6 +1,5 @@
 package org.visualeagle.utils;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -12,18 +11,18 @@ public class ByteArrayParserFormatter {
 
     private ByteArrayInputStream inputStream;
     private ByteArrayFormatter formatter;
-    
+
     public ByteArrayParserFormatter(byte[] array) {
         inputStream = new ByteArrayInputStream(array);
-        formatter=new ByteArrayFormatter(100);
+        formatter = new ByteArrayFormatter(100);
     }
 
     public byte[] receive(int count) throws IOException {
         byte[] buffer = new byte[count];
         for (int i = 0; i < count; i++) {
-            int value=inputStream.read();
-            if(value==-1){
-                throw new IllegalStateException("Unexpected end of the stream while reading ["+count+"] bytes from stream");
+            int value = inputStream.read();
+            if (value == -1) {
+                throw new IllegalStateException("Unexpected end of the stream while reading [" + count + "] bytes from stream");
             }
             buffer[i] = (byte) value;
         }
@@ -83,7 +82,5 @@ public class ByteArrayParserFormatter {
     public byte[] getBytes() {
         return formatter.getBytes();
     }
-    
-    
 
 }

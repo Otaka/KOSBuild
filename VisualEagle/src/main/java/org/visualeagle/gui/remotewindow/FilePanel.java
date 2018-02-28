@@ -413,6 +413,21 @@ public class FilePanel extends JPanel {
         }
 
         List<RFile> selectedFiles = fileList.getSelectedValuesList();
+        String message;
+        String caption;
+        
+        if (selectedFiles.size() == 1) {
+            RFile selectedFile = selectedFiles.get(0);
+            message = "Are you sure, you want to remove file [" + selectedFile.getName() + "]";
+            caption="Remove file";
+        } else {
+            message = "Are you sure, you want to remove " + selectedFiles.size() + " files";
+            caption="Remove files";
+        }
+
+        if (JOptionPane.YES_OPTION != JOptionPane.showOptionDialog(null, message, caption, JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null)) {
+            return;
+        }
         LongRunningTaskWithDialog longRunningTask = new LongRunningTaskWithDialog(SwingUtilities.getWindowAncestor(this), new LongRunningTask() {
             @Override
             public Object run(LongRunningTaskWithDialog dialog) throws Exception {
@@ -563,8 +578,8 @@ public class FilePanel extends JPanel {
         } else {
             byte[] buffer = new byte[100 * 1024];
             AbstractFileProvider sourceProvider = fileToCopy.getFileProvider();
-            int readHandle = sourceProvider.openFileForReading(fileToCopy).get();
-            int writeHandle = destinationProvider.openFileForWriting(newFile, false).get();
+            long readHandle = sourceProvider.openFileForReading(fileToCopy).get();
+            long writeHandle = destinationProvider.openFileForWriting(newFile, false).get();
             while (true) {
                 if (dialog.isCanceled()) {
                     break;

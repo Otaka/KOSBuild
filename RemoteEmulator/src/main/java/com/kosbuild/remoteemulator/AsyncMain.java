@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -32,14 +31,12 @@ public class AsyncMain {
     private final static int COMMAND_COMMAND = 0;
     private final String ERROR = "5";
     private final String OK = "1";
-    
-      
-    private int fileDescriptor=0;
-    private Map<Long, OutputStream>filesOpenedForWriting=new HashMap<>();
-    private Map<Long, InputStream>filesOpenedForReading=new HashMap<>();
-    
-    private String emulatedRemoteFolder="d:/temp/remoteFileSystem";
-    
+
+    private int fileDescriptor = 0;
+    private Map<Long, OutputStream> filesOpenedForWriting = new HashMap<>();
+    private Map<Long, InputStream> filesOpenedForReading = new HashMap<>();
+
+    private String emulatedRemoteFolder = "d:/temp/remoteFileSystem";
 
     public static void main(String[] args) throws IOException, UnknownHostException, InterruptedException {
         new AsyncMain().asyncMainAppStart(args);
@@ -127,10 +124,12 @@ public class AsyncMain {
             closeFile(parser);
         } else if (command.equalsIgnoreCase("DELET_FILE")) {
             deleteFile(parser);
-        } else if (command.equalsIgnoreCase("COPY__FILE")) {
-            copyFile(parser);
         } else if (command.equalsIgnoreCase("MOVE__FILE")) {
-            moveFile(parser);
+            renameFile(parser);
+        } else if (command.equalsIgnoreCase("MAKE_FLDER")) {
+            createFolder(parser);
+        } else if (command.equalsIgnoreCase("CHCK_EXIST")) {
+            checkFileExists(parser);
         } else if (command.equalsIgnoreCase("RUN____APP")) {
             runFile(parser);
         } else {
@@ -147,83 +146,69 @@ public class AsyncMain {
         parser.sendString(OK);
     }
 
-    private void copyFile(ByteArrayParserFormatter parser) throws IOException {
-        String fileSource = parser.receiveString();
-        String fileDestination = parser.receiveString();
-        System.out.println("Copy file [" + fileSource + "] -> [" + fileDestination + "]");
-        File sourceFile = new File(fileSource);
-        if (!sourceFile.exists()) {
-            parser.sendString(ERROR);
-            parser.sendString("Source file does not exists");
-            return;
-        }
-        File destFile = new File(fileDestination);
-        if (!destFile.exists()) {
-            parser.sendString(ERROR);
-            parser.sendString("Destination file does not exists");
-            return;
-        }
-
-        if (sourceFile.isDirectory()) {
-            FileUtils.copyDirectoryToDirectory(sourceFile, destFile);
-        } else {
-            FileUtils.copyFileToDirectory(sourceFile, destFile);
-        }
-        parser.sendString(OK);
-    }
-
     private void renameFile(ByteArrayParserFormatter parser) throws IOException {
         String fileSource = parser.receiveString();
-        String newFileName = parser.receiveString();
-        System.out.println("Rename file [" + fileSource + "] -> [" + newFileName + "]");
-        File sourceFile = new File(fileSource);
+        String fileDestination = parser.receiveString();
+        System.out.println("Rename file [" + fileSource + "] -> [" + fileDestination + "]");
+        File sourceFile = getFile(fileSource);
         if (!sourceFile.exists()) {
             parser.sendString(ERROR);
             parser.sendString("Source file does not exists");
             return;
         }
-        
-        File destFile = new File(sourceFile.getParent(),newFileName);
+        File destFile = getFile(fileDestination);
         if (destFile.exists()) {
             parser.sendString(ERROR);
-            parser.sendString("Desination file already exists");
+            parser.sendString("Destination file already exists");
             return;
         }
-
-        sourceFile.renameTo(destFile);
-
-        parser.sendString(OK);
+        System.out.println("Rename file [" + sourceFile.getAbsolutePath() + "] to [" + destFile.getAbsolutePath() + "]");
+        if (sourceFile.renameTo(destFile)) {
+            parser.sendString(OK);
+        } else {
+            parser.sendString(ERROR);
+            parser.sendString("Cannot rename file");
+        }
     }
 
-    private void moveFile(ByteArrayParserFormatter parser) throws IOException {
-        String fileSource = parser.receiveString();
-        String fileDestination = parser.receiveString();
-        System.out.println("Move file [" + fileSource + "] -> [" + fileDestination + "]");
-        File sourceFile = new File(fileSource);
-        if (!sourceFile.exists()) {
+    private void createFolder(ByteArrayParserFormatter parser) throws IOException {
+        String folder = parser.receiveString();
+        String newFolderName = parser.receiveString();
+        System.out.println("Make folder [" + newFolderName + "] in [" + folder + "]");
+        File sourceFolder = getFile(folder);
+        if (!sourceFolder.exists()) {
             parser.sendString(ERROR);
-            parser.sendString("Source file does not exists");
-            return;
-        }
-        File destFile = new File(fileDestination);
-        if (!destFile.exists()) {
-            parser.sendString(ERROR);
-            parser.sendString("Destination file does not exists");
+            parser.sendString("Folder [" + folder + "] does not exists");
             return;
         }
 
-        if (sourceFile.isDirectory()) {
-            FileUtils.moveDirectoryToDirectory(sourceFile, destFile, false);
-        } else {
-            FileUtils.moveFileToDirectory(sourceFile, destFile, false);
+        File newFolderFileObject = new File(sourceFolder, newFolderName);
+        if (newFolderFileObject.exists()) {
+            parser.sendString(ERROR);
+            parser.sendString("Folder [" + newFolderName + "] already exists");
+            return;
         }
+
+        if (newFolderFileObject.mkdirs()) {
+            parser.sendString(OK);
+        } else {
+            parser.sendString(ERROR);
+            parser.sendString("Cannot create folder");
+        }
+    }
+
+    private void checkFileExists(ByteArrayParserFormatter parser) throws IOException {
+        String filePath = parser.receiveString();
+        System.out.println("Check file exists [" + filePath + "]");
+        File file = getFile(filePath);
         parser.sendString(OK);
+        parser.sendBoolean(file.exists());
     }
 
     private void deleteFile(ByteArrayParserFormatter parser) throws IOException {
         String filePath = parser.receiveString();
         System.out.println("Delete file [" + filePath + "]");
-        File file = new File(emulatedRemoteFolder+filePath);
+        File file = getFile(filePath);
         if (!file.exists()) {
             parser.sendString(ERROR);
             parser.sendString("File does not exists");
@@ -243,6 +228,13 @@ public class AsyncMain {
         System.out.println("Close file " + fileDecriptor);
         OutputStream stream = filesOpenedForWriting.get(fileDecriptor);
         if (stream != null) {
+            try {
+                stream.close();
+            } catch (Exception ex) {
+                parser.sendString(ERROR);
+                parser.sendString("Error while try to close file [" + fileDecriptor + "] opened for writing");
+                return;
+            }
             filesOpenedForWriting.remove(fileDecriptor);
             parser.sendString(OK);
             return;
@@ -250,6 +242,14 @@ public class AsyncMain {
 
         InputStream stream2 = filesOpenedForReading.get(fileDecriptor);
         if (stream2 != null) {
+            try {
+                stream2.close();
+            } catch (Exception ex) {
+                parser.sendString(ERROR);
+                parser.sendString("Error while try to close file [" + fileDecriptor + "] opened for reading");
+                return;
+            }
+
             filesOpenedForReading.remove(fileDecriptor);
             parser.sendString(OK);
             return;
@@ -307,7 +307,7 @@ public class AsyncMain {
     private void openFileForReading(ByteArrayParserFormatter parser) throws IOException {
         String filePath = parser.receiveString();
         System.out.println("Open file for reader [" + filePath + "]");
-        File file = new File(filePath);
+        File file = getFile(filePath);
         if (!file.exists()) {
             parser.sendString(ERROR);
             parser.sendString("File does not exists");
@@ -327,11 +327,12 @@ public class AsyncMain {
         parser.sendString(OK);
         parser.sendLong(newDescriptor);
     }
+
     private void openFileForWriting(ByteArrayParserFormatter parser) throws IOException {
         String filePath = parser.receiveString();
         boolean append = parser.receiveBoolean();
         System.out.println("Open file for writing [" + filePath + "] Append " + append);
-        File file = new File(filePath);
+        File file = getFile(filePath);
 
         if (file.exists() && file.isDirectory()) {
             parser.sendString(ERROR);
@@ -348,11 +349,10 @@ public class AsyncMain {
 
     private void processListFolder(ByteArrayParserFormatter parser) throws IOException {
         String folderPath = parser.receiveString();
-        
+
         System.out.println("List folder " + folderPath);
-        folderPath=emulatedRemoteFolder+folderPath;
-        System.out.println("Emulated folder " + folderPath);
-        File folder = new File(folderPath);
+        File folder = getFile(folderPath);
+        System.out.println("Emulated folder " + folder.getAbsolutePath());
         if (!folder.exists()) {
             parser.sendString(ERROR);
             parser.sendString("Folder does not exists");
@@ -375,5 +375,9 @@ public class AsyncMain {
         parser.sendString(OK);
         parser.sendInt(1);//count of strings
         parser.sendString("/");//actual root folder
+    }
+
+    private File getFile(String path) {
+        return new File(emulatedRemoteFolder + path);
     }
 }

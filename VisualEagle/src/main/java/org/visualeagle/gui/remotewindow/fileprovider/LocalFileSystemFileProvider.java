@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -112,13 +113,13 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         return "/";
     }
 
-    private Map<Integer, InputStream> filesOpenedForReadingMap = new HashMap<>();
-    private Map<Integer, OutputStream> filesOpenedForWritingMap = new HashMap<>();
-    private AtomicInteger handleSequence = new AtomicInteger(1);
+    private Map<Long, InputStream> filesOpenedForReadingMap = new HashMap<>();
+    private Map<Long, OutputStream> filesOpenedForWritingMap = new HashMap<>();
+    private AtomicLong handleSequence = new AtomicLong(1);
 
     @Override
-    public ListenableFutureTask<Integer> openFileForReading(RFile file) {
-        ListenableFutureTaskWithData<Integer> future = new ListenableFutureTaskWithData<>();
+    public ListenableFutureTask<Long> openFileForReading(RFile file) {
+        ListenableFutureTaskWithData<Long> future = new ListenableFutureTaskWithData<>();
         File localFileObject = createFileFromRFile(file);
         if (!localFileObject.exists()) {
             future.finishFutureAndReturnException(new FileNotFoundException("File [" + file.getFullPath() + "] does not exists"));
@@ -127,7 +128,7 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
 
         try {
             InputStream stream = new BufferedInputStream(new FileInputStream(localFileObject));
-            int handle = handleSequence.incrementAndGet();
+            long handle = handleSequence.incrementAndGet();
             filesOpenedForReadingMap.put(handle, stream);
             future.finishFutureAndReturnData(handle);
         } catch (FileNotFoundException ex) {
@@ -138,12 +139,12 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     }
 
     @Override
-    public ListenableFutureTask<Integer> openFileForWriting(RFile file, boolean append) {
-        ListenableFutureTaskWithData<Integer> future = new ListenableFutureTaskWithData<>();
+    public ListenableFutureTask<Long> openFileForWriting(RFile file, boolean append) {
+        ListenableFutureTaskWithData<Long> future = new ListenableFutureTaskWithData<>();
         File localFileObject = createFileFromRFile(file);
         try {
             OutputStream stream = new BufferedOutputStream(new FileOutputStream(localFileObject, append));
-            int handle = handleSequence.incrementAndGet();
+            long handle = handleSequence.incrementAndGet();
             filesOpenedForWritingMap.put(handle, stream);
             future.finishFutureAndReturnData(handle);
         } catch (FileNotFoundException ex) {
@@ -154,7 +155,7 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     }
 
     @Override
-    public ListenableFutureTask<Boolean> close(int handle) {
+    public ListenableFutureTask<Boolean> close(long handle) {
         ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
         Closeable toClose = null;
         InputStream rStream = filesOpenedForReadingMap.get(handle);
@@ -180,7 +181,7 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     }
 
     @Override
-    public ListenableFutureTask<Boolean> writeToFile(int handle, byte[] buffer,int count) {
+    public ListenableFutureTask<Boolean> writeToFile(long handle, byte[] buffer,int count) {
         ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
         OutputStream stream = filesOpenedForWritingMap.get(handle);
         if (stream == null) {
@@ -212,7 +213,7 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     }
 
     @Override
-    public ListenableFutureTask<Integer> readFromFile(int handle, byte[] buffer) {
+    public ListenableFutureTask<Integer> readFromFile(long handle, byte[] buffer) {
         ListenableFutureTaskWithData<Integer> future = new ListenableFutureTaskWithData<>();
 
         InputStream stream = filesOpenedForReadingMap.get(handle);
