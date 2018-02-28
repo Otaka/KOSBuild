@@ -65,11 +65,24 @@ public class RemoteConnectionManager {
         for (ConnectionStatusChangedEvent ce : connectionEvents) {
             ce.serverStopped();
         }
+        //close all already connected sockets
+        for(int i=0;i<clients.size();i++){
+            SocketHandler sh=clients.get(i);
+            if(sh!=null){
+                try {
+                    sh.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+        clients.clear();
 
         Settings.removeProperty("connectionManager.port");
         Settings.flush();
     }
-
+    
+    private ArrayList<SocketHandler>clients=new ArrayList<>();
     public void createServer(int serverPort) throws IOException {
         serverSocket = socketsManager.createServerSocket(serverPort);
         serverSocket.setConnectionEvent(new ConnectionEvent() {
@@ -77,6 +90,7 @@ public class RemoteConnectionManager {
             public void clientConnected(SocketHandler socketHandler) {
                 try {
                     System.out.println("Client connected");
+                    clients.add(socketHandler);
                     int value1 = (int) (Math.random() * 9999);
                     int value2 = (int) (Math.random() * 9999);
                     String dataToSend = "" + value1 + "|" + value2;
@@ -100,7 +114,7 @@ public class RemoteConnectionManager {
 
             @Override
             public void clientDisconnected(SocketHandler socketHandler) {
-
+                clients.remove(socketHandler);
                 onClientDisconnected();
             }
         });
@@ -120,6 +134,7 @@ public class RemoteConnectionManager {
 
     private void onClientDisconnected() {
         if (currentConnection != null) {
+            System.out.println("Client disconnected");
             Lookup.get().put("connectedClient", false);
             currentConnection = null;
             for (ConnectionStatusChangedEvent ce : connectionEvents) {

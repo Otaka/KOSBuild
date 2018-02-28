@@ -106,37 +106,46 @@ public class AsyncMain {
     }
 
     public byte[] processCommand(Request session) throws IOException {
-        ByteArrayParserFormatter parser = new ByteArrayParserFormatter(session.getBytes());
-        String command = parser.receiveString();
-        if (command.equalsIgnoreCase("LIST_ROOTS")) {
-            processListRoots(parser);
-        } else if (command.equalsIgnoreCase("LIST_FLDER")) {
-            processListFolder(parser);
-        } else if (command.equalsIgnoreCase("OPENFILE_R")) {
-            openFileForReading(parser);
-        } else if (command.equalsIgnoreCase("OPENFILE_W")) {
-            openFileForWriting(parser);
-        } else if (command.equalsIgnoreCase("WRITE_BUFF")) {
-            writeBufferToFile(parser);
-        } else if (command.equalsIgnoreCase("READ__BUFF")) {
-            readBufferFromFile(parser);
-        } else if (command.equalsIgnoreCase("CLOSE_FILE")) {
-            closeFile(parser);
-        } else if (command.equalsIgnoreCase("DELET_FILE")) {
-            deleteFile(parser);
-        } else if (command.equalsIgnoreCase("MOVE__FILE")) {
-            renameFile(parser);
-        } else if (command.equalsIgnoreCase("MAKE_FLDER")) {
-            createFolder(parser);
-        } else if (command.equalsIgnoreCase("CHCK_EXIST")) {
-            checkFileExists(parser);
-        } else if (command.equalsIgnoreCase("RUN____APP")) {
-            runFile(parser);
-        } else {
-            System.out.println("Unknown command [" + command + "]");
-            return null;
+        try {
+            ByteArrayParserFormatter parser = new ByteArrayParserFormatter(session.getBytes());
+            String command = parser.receiveString();
+            if (command.equalsIgnoreCase("LIST_ROOTS")) {
+                processListRoots(parser);
+            } else if (command.equalsIgnoreCase("LIST_FLDER")) {
+                processListFolder(parser);
+            } else if (command.equalsIgnoreCase("OPENFILE_R")) {
+                openFileForReading(parser);
+            } else if (command.equalsIgnoreCase("OPENFILE_W")) {
+                openFileForWriting(parser);
+            } else if (command.equalsIgnoreCase("WRITE_BUFF")) {
+                writeBufferToFile(parser);
+            } else if (command.equalsIgnoreCase("READ__BUFF")) {
+                readBufferFromFile(parser);
+            } else if (command.equalsIgnoreCase("CLOSE_FILE")) {
+                closeFile(parser);
+            } else if (command.equalsIgnoreCase("DELET_FILE")) {
+                deleteFile(parser);
+            } else if (command.equalsIgnoreCase("MOVE__FILE")) {
+                renameFile(parser);
+            } else if (command.equalsIgnoreCase("MAKE_FLDER")) {
+                createFolder(parser);
+            } else if (command.equalsIgnoreCase("CHCK_EXIST")) {
+                checkFileExists(parser);
+            } else if (command.equalsIgnoreCase("RUN____APP")) {
+                runFile(parser);
+            } else {
+                parser.sendString(ERROR);
+                parser.sendString("RemoteEmulator:[Unknown command '" + command + "']]");
+                return parser.getBytes();
+            }
+            return parser.getBytes();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            ByteArrayParserFormatter bp = new ByteArrayParserFormatter(new byte[0]);
+            bp.sendString(ERROR);
+            bp.sendString(ex.getMessage());
+            return bp.getBytes();
         }
-        return parser.getBytes();
     }
 
     private void runFile(ByteArrayParserFormatter parser) throws IOException {
@@ -377,7 +386,17 @@ public class AsyncMain {
         parser.sendString("/");//actual root folder
     }
 
+    private String concatFileParts(String p1, String p2) {
+        if (!p1.endsWith("/") && !p2.startsWith("/")) {
+            return p1 + "/" + p2;
+        }
+        if (p1.endsWith("/") && p2.startsWith("/")) {
+            return p1 + p2.substring(1);
+        }
+        return p1 + p2;
+    }
+    
     private File getFile(String path) {
-        return new File(emulatedRemoteFolder + path);
+        return new File(concatFileParts(emulatedRemoteFolder, path));
     }
 }

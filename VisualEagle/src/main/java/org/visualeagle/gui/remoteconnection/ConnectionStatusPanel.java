@@ -61,7 +61,11 @@ public class ConnectionStatusPanel extends JPanel {
 
             @Override
             public void clientDisconnected() {
-                setConnectingStatus();
+                if (connectionManager.isServerStarted()) {
+                    setConnectingStatus();
+                } else {
+                    setDisconnectedStatus();
+                }
             }
 
             @Override
