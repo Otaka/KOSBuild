@@ -42,7 +42,16 @@ public class EditorFactory {
         if(extension.equalsIgnoreCase("properties")){
             return new RSyntaxEditor(file,tabComponent, SyntaxConstants.SYNTAX_STYLE_PROPERTIES_FILE);
         }
-        
+        if(extension.equalsIgnoreCase("html")){
+            return new RSyntaxEditor(file,tabComponent, SyntaxConstants.SYNTAX_STYLE_HTML);
+        }
+        if(extension.equalsIgnoreCase("init")){
+            return new RSyntaxEditor(file,tabComponent, SyntaxConstants.SYNTAX_STYLE_INI);
+        }
+        if(extension.equalsIgnoreCase("java")){
+            return new RSyntaxEditor(file,tabComponent, SyntaxConstants.SYNTAX_STYLE_JAVA);
+        }
+
         return new RSyntaxEditor(file,tabComponent, SyntaxConstants.SYNTAX_STYLE_NONE);
     }
 }
