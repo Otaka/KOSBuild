@@ -5,14 +5,14 @@ import java.lang.reflect.Method;
 /**
  * @author Dmitry Savchenko
  */
-public class ColumnData {
+public class PreprocessedColumn {
 
     private String columnName;
     private int id;
     private Method setter;
     private Method getter;
     private Method visualFormatter;
-    private COLUMNTYPE columnType;
+    private TypeOfColumn columnType;
 
     public String getColumnName() {
         return columnName;
@@ -38,11 +38,11 @@ public class ColumnData {
         this.setter = setter;
     }
 
-    public COLUMNTYPE getColumnType() {
+    public TypeOfColumn getColumnType() {
         return columnType;
     }
 
-    public void setColumnType(COLUMNTYPE type) {
+    public void setColumnType(TypeOfColumn type) {
         this.columnType = type;
     }
 

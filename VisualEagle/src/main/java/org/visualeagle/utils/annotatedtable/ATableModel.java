@@ -7,14 +7,14 @@ import javax.swing.table.AbstractTableModel;
 /**
  * @author Dmitry Savchenko
  */
-public class AnnotatedTableModel<T> extends AbstractTableModel {
+public class ATableModel<T> extends AbstractTableModel {
 
     private boolean isCellEditable = false;
     private ClassData classData;
-    private ColumnData[] visibleColumns = null;
+    private PreprocessedColumn[] visibleColumns = null;
     private List<T> data=new ArrayList<T>(0);
 
-    public AnnotatedTableModel(Class<T> clazz) {
+    public ATableModel(Class<T> clazz) {
         try{
         setClass(clazz);
         }catch(Exception ex){
@@ -28,7 +28,7 @@ public class AnnotatedTableModel<T> extends AbstractTableModel {
 
     final public void setClass(Class clazz) throws NoSuchMethodException, Exception {
         ClassData cData = new ClassData();
-        cData.setClazz(clazz);
+        cData.processClazz(clazz);
         classData = cData;
         setVisibleColumns(getDefaultAllVisibleColumns(classData));
     }
@@ -44,7 +44,7 @@ public class AnnotatedTableModel<T> extends AbstractTableModel {
     }
 
     public void setVisibleColumns(int... visibleColumnsIds) {
-        visibleColumns = new ColumnData[visibleColumnsIds.length];
+        visibleColumns = new PreprocessedColumn[visibleColumnsIds.length];
         for (int i = 0; i < visibleColumnsIds.length; i++) {
             visibleColumns[i] = classData.getColumnDataById(visibleColumnsIds[i]);
         }
@@ -97,7 +97,7 @@ public class AnnotatedTableModel<T> extends AbstractTableModel {
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         Object record = data.get(rowIndex);
-        ColumnData column = visibleColumns[columnIndex];
+        PreprocessedColumn column = visibleColumns[columnIndex];
         String value = null;
         if (column.getVisualFormatter() != null) {
             try {

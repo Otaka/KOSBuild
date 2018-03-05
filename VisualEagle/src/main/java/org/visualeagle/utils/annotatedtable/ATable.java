@@ -7,14 +7,14 @@ import javax.swing.JTable;
 /**
  * @author Dmitry Savchenko
  */
-public class AnnotatedTable<T> extends JTable {
+public class ATable<T> extends JTable {
 
-    private AnnotatedTableModel<T> tableModel;
+    private ATableModel<T> tableModel;
 
-    public AnnotatedTable(AnnotatedTableModel<T> tableModel) {
+    public ATable(ATableModel<T> tableModel) {
         super(tableModel);
         this.tableModel = tableModel;
-        
+
     }
 
     public void ensureRowIsVisible(int index) {
@@ -37,12 +37,12 @@ public class AnnotatedTable<T> extends JTable {
     public void addData(T value) {
         tableModel.getData().add(value);
     }
-    
-    public T getRow(int row){
+
+    public T getRow(int row) {
         return tableModel.getData().get(row);
     }
 
-    public List<T> getRows(){
+    public List<T> getRows() {
         return tableModel.getData();
     }
 
@@ -50,7 +50,7 @@ public class AnnotatedTable<T> extends JTable {
         tableModel.fireTableDataChanged();
     }
 
-    public AnnotatedTableModel<T> getTableModel() {
+    public ATableModel<T> getTableModel() {
         return tableModel;
     }
 
@@ -77,14 +77,10 @@ public class AnnotatedTable<T> extends JTable {
         return new ArrayList(0);
     }
 
-    public static <T> AnnotatedTable<T> createAnnotatedTable(Class<T> clazz) throws Exception {
-        AnnotatedTableModel<T> tableModel = createAnnotatedTableModel(clazz);
-        AnnotatedTable table = new AnnotatedTable(tableModel);
+    public static <T> ATable<T> createATable(Class<T> clazz) throws Exception {
+        ATableModel<T> tableModel = new ATableModel(clazz);
+        ATable table = new ATable(tableModel);
         table.setModel(tableModel);
         return table;
-    }
-
-    public static AnnotatedTableModel createAnnotatedTableModel(Class clazz) throws NoSuchMethodException, Exception {
-        return new AnnotatedTableModel(clazz);
     }
 }

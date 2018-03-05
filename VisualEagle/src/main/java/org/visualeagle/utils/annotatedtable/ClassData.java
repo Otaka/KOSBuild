@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.visualeagle.utils.annotatedtable.annotations.AnnotatedTableField;
-import org.visualeagle.utils.annotatedtable.annotations.AnnotatedTableFieldType;
+import org.visualeagle.utils.annotatedtable.annotations.ATableField;
+import org.visualeagle.utils.annotatedtable.annotations.ATableFieldType;
 
 /**
  * @author Dmitry Savchenko
@@ -15,34 +15,34 @@ import org.visualeagle.utils.annotatedtable.annotations.AnnotatedTableFieldType;
 public class ClassData {
 
     private Class clazz = null;
-    private List<ColumnData> columns = null;
-    private Map<Integer, ColumnData> columnMap = new TreeMap<Integer, ColumnData>();
+    private List<PreprocessedColumn> columns = null;
+    private Map<Integer, PreprocessedColumn> columnMap = new TreeMap<Integer, PreprocessedColumn>();
 
     public Class getClazz() {
         return clazz;
     }
 
-    public void setClazz(Class clazz) throws NoSuchMethodException, Exception {
+    public void processClazz(Class clazz) throws NoSuchMethodException, Exception {
         this.clazz = clazz;
         columns = processClass(clazz);
     }
 
-    public List<ColumnData> getColumns() {
+    public List<PreprocessedColumn> getColumns() {
         return columns;
     }
 
-    public ColumnData getColumnDataById(int id) {
+    public PreprocessedColumn getColumnDataById(int id) {
         return columnMap.get(id);
     }
 
-    private List<ColumnData> processClass(Class cd) throws NoSuchMethodException, Exception {
-        List<ColumnData> tColumns = new ArrayList<ColumnData>(10);
+    private List<PreprocessedColumn> processClass(Class cd) throws NoSuchMethodException, Exception {
+        List<PreprocessedColumn> tColumns = new ArrayList<PreprocessedColumn>(10);
         Class tClazz = cd;
         Class currentClass = tClazz;
         while (currentClass != null) {
             java.lang.reflect.Field[] fields = currentClass.getDeclaredFields();
             for (java.lang.reflect.Field f : fields) {
-                AnnotatedTableField fieldAnnotation = f.getAnnotation(AnnotatedTableField.class);
+                ATableField fieldAnnotation = f.getAnnotation(ATableField.class);
                 if (fieldAnnotation != null) {
                     tColumns.add(processField(fieldAnnotation, f, currentClass));
                 }
@@ -50,7 +50,7 @@ public class ClassData {
 
             java.lang.reflect.Method[] methods = currentClass.getDeclaredMethods();
             for (java.lang.reflect.Method m : methods) {
-                AnnotatedTableField methodAnnotation = m.getAnnotation(AnnotatedTableField.class);
+                ATableField methodAnnotation = m.getAnnotation(ATableField.class);
                 if (methodAnnotation != null) {
                     tColumns.add(processMethod(methodAnnotation, m, currentClass));
                 }
@@ -71,27 +71,27 @@ public class ClassData {
         return firstLetter + string.substring(1);
     }
 
-    private static COLUMNTYPE resolveColumnType(Class columnType) throws Exception {
+    private static TypeOfColumn resolveColumnType(Class columnType) throws Exception {
         String typeName = columnType.getName();
         if ("int".equals(typeName) || "java.lang.Integer".equals(typeName) || "long".equals(typeName)) {
-            return COLUMNTYPE.INTEGER;
+            return TypeOfColumn.INTEGER;
         } else if ("float".equals(typeName) || "java.lang.Float".equals(typeName) || "double".equals(typeName) || "java.lang.Double".equals(typeName)) {
-            return COLUMNTYPE.DOUBLE;
+            return TypeOfColumn.DOUBLE;
         } else if ("java.lang.String".equals(typeName)) {
-            return COLUMNTYPE.STRING;
+            return TypeOfColumn.STRING;
         } else if ("java.utils.Date".equals(typeName)) {
-            return COLUMNTYPE.DATE;
+            return TypeOfColumn.DATE;
         } else if ("java.sql.Timestamp".equals(typeName)) {
-            return COLUMNTYPE.TIMESTAMP;
+            return TypeOfColumn.TIMESTAMP;
         } else if ("boolean".equals(typeName) || "java.lang.Boolean".equals(typeName)) {
-            return COLUMNTYPE.BOOLEAN;
+            return TypeOfColumn.BOOLEAN;
         }
 
         throw new Exception("Do not know field type [" + typeName + "]");
     }
 
-    private ColumnData processField(AnnotatedTableField fieldAnnotation, Field field, Class clazz) throws NoSuchMethodException, Exception {
-        ColumnData column = new ColumnData();
+    private PreprocessedColumn processField(ATableField fieldAnnotation, Field field, Class clazz) throws NoSuchMethodException, Exception {
+        PreprocessedColumn column = new PreprocessedColumn();
         String fieldName = field.getName();
         Class fieldType = field.getType();
         String getterMethodName = "get" + makeFirstLetterBig(fieldName);
@@ -107,8 +107,8 @@ public class ClassData {
         column.setVisualFormatter(getterStringValue);
         column.setColumnName(fieldAnnotation.column());
         column.setId(fieldAnnotation.id());
-        AnnotatedTableFieldType typeAnnotation = field.getAnnotation(AnnotatedTableFieldType.class);
-        if (typeAnnotation != null && typeAnnotation.getType() != COLUMNTYPE.NULL) {
+        ATableFieldType typeAnnotation = field.getAnnotation(ATableFieldType.class);
+        if (typeAnnotation != null && typeAnnotation.getType() != TypeOfColumn.NULL) {
             column.setColumnType(typeAnnotation.getType());
         } else {
             column.setColumnType(resolveColumnType(fieldType));
@@ -133,8 +133,8 @@ public class ClassData {
         return "set" + name;
     }
 
-    private ColumnData processMethod(AnnotatedTableField methodAnnotation, Method method, Class clazz) throws NoSuchMethodException, Exception {
-        ColumnData column = new ColumnData();
+    private PreprocessedColumn processMethod(ATableField methodAnnotation, Method method, Class clazz) throws NoSuchMethodException, Exception {
+        PreprocessedColumn column = new PreprocessedColumn();
         String methodName = method.getName();
         Class methodType = method.getReturnType();
         Method getter = method;
@@ -155,8 +155,8 @@ public class ClassData {
         column.setVisualFormatter(getterStringValue);
         column.setColumnName(methodAnnotation.column());
         column.setId(methodAnnotation.id());
-        AnnotatedTableFieldType typeAnnotation = method.getAnnotation(AnnotatedTableFieldType.class);
-        if (typeAnnotation != null && typeAnnotation.getType() != COLUMNTYPE.NULL) {
+        ATableFieldType typeAnnotation = method.getAnnotation(ATableFieldType.class);
+        if (typeAnnotation != null && typeAnnotation.getType() != TypeOfColumn.NULL) {
             column.setColumnType(typeAnnotation.getType());
         } else {
             column.setColumnType(resolveColumnType(methodType));

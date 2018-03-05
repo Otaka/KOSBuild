@@ -2,12 +2,9 @@ package org.visualeagle.utils.annotatedtable.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import org.visualeagle.utils.annotatedtable.COLUMNTYPE;
+import org.visualeagle.utils.annotatedtable.TypeOfColumn;
 
-/**
- * @author Dmitry
- */
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AnnotatedTableFieldType {
-    COLUMNTYPE getType() default COLUMNTYPE.NULL;
+public @interface ATableFieldType {
+    TypeOfColumn getType() default TypeOfColumn.NULL;
 }
