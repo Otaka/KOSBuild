@@ -71,7 +71,7 @@ public class LongRunningTaskWithDialog extends JDialog {
         pack();
         setLocationRelativeTo(getOwner());
 
-        throtterTimer = new Timer(10, (ActionEvent e) -> {
+        throtterTimer = new Timer(50, (ActionEvent e) -> {
             long currentTimestamp = System.currentTimeMillis();
             if ((currentTimestamp - lastChangeTimestamp) > 100) {
                 if (newInformationMessage1 != null || newInformationMessage2 != null || newProgressBarValue != -1 || newProgressBarMessage != null) {
