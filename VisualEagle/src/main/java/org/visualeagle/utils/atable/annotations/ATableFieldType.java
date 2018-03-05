@@ -1,8 +1,8 @@
-package org.visualeagle.utils.annotatedtable.annotations;
+package org.visualeagle.utils.atable.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import org.visualeagle.utils.annotatedtable.TypeOfColumn;
+import org.visualeagle.utils.atable.TypeOfColumn;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ATableFieldType {

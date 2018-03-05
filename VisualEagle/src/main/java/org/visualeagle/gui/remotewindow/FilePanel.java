@@ -44,7 +44,7 @@ import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.LongRunningTask;
 import org.visualeagle.utils.LongRunningTaskWithDialog;
 import org.visualeagle.utils.Utils;
-import org.visualeagle.utils.annotatedtable.AnnotatedTable;
+import org.visualeagle.utils.atable.ATable;
 
 public class FilePanel extends JPanel {
 
@@ -52,7 +52,7 @@ public class FilePanel extends JPanel {
     private AbstractFileProvider fileProvider;
     private Map<FileSystemType, AbstractFileProvider> fileProvidersCacheMap = new HashMap<>();
     private JComboBox<FileSystemType> fileSystemSelectorCB;
-    private AnnotatedTable<RFileWrapper> fileList;
+    private ATable<RFileWrapper> fileList;
     private final RFile parentRFile;
     private JTextField pathTextField;
 
@@ -61,7 +61,7 @@ public class FilePanel extends JPanel {
         add(createHeader(), BorderLayout.NORTH);
         parentRFile = createGoToParentRFile();
         try {
-            fileList = AnnotatedTable.createAnnotatedTable(RFileWrapper.class);
+            fileList = ATable.createATable(RFileWrapper.class);
         } catch (Exception ex) {
             throw new RuntimeException("Exception while try to create table", ex);
         }
@@ -72,7 +72,7 @@ public class FilePanel extends JPanel {
                 Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 JLabel labelComponent = (JLabel) component;
                 if (column == 0) {
-                    RFileWrapper file = ((AnnotatedTable<RFileWrapper>) table).getRow(row);
+                    RFileWrapper file = ((ATable<RFileWrapper>) table).getRow(row);
                     if (file.getFile().isDirectory()) {
                         labelComponent.setIcon(ImageManager.get().getIcon("folder"));
                     } else {

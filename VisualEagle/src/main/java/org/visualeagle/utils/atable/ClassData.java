@@ -1,4 +1,4 @@
-package org.visualeagle.utils.annotatedtable;
+package org.visualeagle.utils.atable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import org.visualeagle.utils.annotatedtable.annotations.ATableField;
-import org.visualeagle.utils.annotatedtable.annotations.ATableFieldType;
+import org.visualeagle.utils.atable.annotations.ATableField;
+import org.visualeagle.utils.atable.annotations.ATableFieldType;
 
 /**
  * @author Dmitry Savchenko

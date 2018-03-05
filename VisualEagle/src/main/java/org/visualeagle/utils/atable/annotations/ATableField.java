@@ -1,4 +1,4 @@
-package org.visualeagle.utils.annotatedtable.annotations;
+package org.visualeagle.utils.atable.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

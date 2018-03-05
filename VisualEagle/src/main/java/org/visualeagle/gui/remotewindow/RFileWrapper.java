@@ -3,7 +3,7 @@ package org.visualeagle.gui.remotewindow;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.visualeagle.gui.remotewindow.fileprovider.RFile;
-import org.visualeagle.utils.annotatedtable.annotations.AnnotatedTableField;
+import org.visualeagle.utils.atable.annotations.ATableField;
 
 /**
  * @author sad
@@ -24,7 +24,7 @@ public class RFileWrapper {
         return file;
     }
 
-    @AnnotatedTableField(id = NAME, column = "File name")
+    @ATableField(id = NAME, column = "File name")
     public String getName() {
         return file.getName();
     }
@@ -33,7 +33,7 @@ public class RFileWrapper {
         return (file.isDirectory()) ? "[" + file.getName() + "]" : file.getName();
     }
 
-    @AnnotatedTableField(id = LAST_MODIFIED, column = "Last modified")
+    @ATableField(id = LAST_MODIFIED, column = "Last modified")
     public long getLastModified() {
         return file.getLastModified();
     }
@@ -42,7 +42,7 @@ public class RFileWrapper {
         return dataFormatter.format(new Date(file.getLastModified()));
     }
 
-    @AnnotatedTableField(id = SIZE, column = "Size")
+    @ATableField(id = SIZE, column = "Size")
     public long getSize() {
         return file.getSize();
     }

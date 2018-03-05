@@ -1,4 +1,4 @@
-package org.visualeagle.utils.annotatedtable;
+package org.visualeagle.utils.atable;
 
 import java.util.ArrayList;
 import java.util.List;
