@@ -47,4 +47,18 @@ public class ImageManager {
         BufferedImage image = getImage(name);
         return new ImageIcon(image);
     }
+
+    public ImageIcon getIconForFile(String name, String extension) {
+        String iconName = "file";
+        if (extension.equals("h") || extension.equals("hpp")) {
+            iconName = "fileH";
+        } else if (extension.equals("c")) {
+            iconName = "fileC";
+        } else if (extension.equals("cpp")) {
+            iconName = "fileCpp";
+        }
+
+        BufferedImage image = getImage(iconName);
+        return new ImageIcon(image);
+    }
 }

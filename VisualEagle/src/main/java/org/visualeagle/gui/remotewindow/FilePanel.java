@@ -20,11 +20,8 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import static javax.swing.JOptionPane.QUESTION_MESSAGE;
@@ -32,10 +29,11 @@ import org.visualeagle.gui.remotewindow.fileprovider.RFile;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
-import org.apache.commons.lang3.ArrayUtils;
+import javax.swing.table.DefaultTableCellRenderer;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.visualeagle.gui.remotewindow.fileprovider.AbstractFileProvider;
@@ -46,6 +44,7 @@ import org.visualeagle.utils.ImageManager;
 import org.visualeagle.utils.LongRunningTask;
 import org.visualeagle.utils.LongRunningTaskWithDialog;
 import org.visualeagle.utils.Utils;
+import org.visualeagle.utils.annotatedtable.AnnotatedTable;
 
 public class FilePanel extends JPanel {
 
@@ -53,7 +52,7 @@ public class FilePanel extends JPanel {
     private AbstractFileProvider fileProvider;
     private Map<FileSystemType, AbstractFileProvider> fileProvidersCacheMap = new HashMap<>();
     private JComboBox<FileSystemType> fileSystemSelectorCB;
-    private JList<RFile> fileList;
+    private AnnotatedTable<RFileWrapper> fileList;
     private final RFile parentRFile;
     private JTextField pathTextField;
 
@@ -61,19 +60,26 @@ public class FilePanel extends JPanel {
         setLayout(new BorderLayout(5, 5));
         add(createHeader(), BorderLayout.NORTH);
         parentRFile = createGoToParentRFile();
+        try {
+            fileList = AnnotatedTable.createAnnotatedTable(RFileWrapper.class);
+        } catch (Exception ex) {
+            throw new RuntimeException("Exception while try to create table", ex);
+        }
 
-        fileList = new JList<>(new DefaultListModel());
-        fileList.setCellRenderer(new DefaultListCellRenderer() {
+        fileList.setDefaultRenderer(String.class, new DefaultTableCellRenderer() {
             @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-                Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                RFile file = (RFile) list.getModel().getElementAt(index);
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 JLabel labelComponent = (JLabel) component;
-                labelComponent.setText(file.getName());
-                if (file.isDirectory()) {
-                    labelComponent.setIcon(ImageManager.get().getIcon("folder"));
+                if (column == 0) {
+                    RFileWrapper file = ((AnnotatedTable<RFileWrapper>) table).getRow(row);
+                    if (file.getFile().isDirectory()) {
+                        labelComponent.setIcon(ImageManager.get().getIcon("folder"));
+                    } else {
+                        labelComponent.setIcon(ImageManager.get().getIconForFile("file", file.getFile().getExtension()));
+                    }
                 } else {
-                    labelComponent.setIcon(ImageManager.get().getIcon("file"));
+                    labelComponent.setIcon(null);
                 }
                 return component;
             }
@@ -83,8 +89,8 @@ public class FilePanel extends JPanel {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    if (fileList.getSelectedIndex() != -1) {
-                        onFileSelected(fileList.getSelectedValue());
+                    if (fileList.getSelectedRow() != -1) {
+                        onFileSelected(fileList.getSelectedObject().getFile());
                     }
                 }
             }
@@ -94,12 +100,11 @@ public class FilePanel extends JPanel {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
-                    JList list = (JList) e.getSource();
-                    int row = list.locationToIndex(e.getPoint());
+                    /* int row = fileList.locationToIndex(e.getPoint());
                     //first check if this row is in the list of already selected rows
                     if (!ArrayUtils.contains(list.getSelectedIndices(), row)) {
                         list.setSelectedIndex(row);
-                    }
+                    }*/
                 }
             }
         });
@@ -108,14 +113,15 @@ public class FilePanel extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() > 1 && (e.getClickCount() % 2) == 0) {
-                    if (fileList.getSelectedIndex() != -1) {
-                        onFileSelected(fileList.getSelectedValue());
+                    if (fileList.getSelectedRow() != -1) {
+                        onFileSelected(fileList.getSelectedObject().getFile());
                     }
                 }
             }
         });
 
         JScrollPane scrollPane = new JScrollPane(fileList);
+        fileList.setFillsViewportHeight(true);
         scrollPane.getVerticalScrollBar().setUnitIncrement(20);
         add(scrollPane);
         fileList.setComponentPopupMenu(createPopupMenu());
@@ -186,12 +192,11 @@ public class FilePanel extends JPanel {
             setCurrentFolder(parentFile);
             fillFileList(() -> {
                 String name = currentFolder.getName();
-                DefaultListModel listModel = (DefaultListModel) fileList.getModel();
-                for (int i = 0; i < listModel.size(); i++) {
-                    RFile file = (RFile) listModel.get(i);
+                for (int i = 0; i < fileList.getSelectedObjects().size(); i++) {
+                    RFileWrapper file = (RFileWrapper) fileList.getSelectedObjects().get(i);
                     if (name.equals(file.getName())) {
-                        fileList.setSelectedIndex(i);
-                        fileList.ensureIndexIsVisible(i);
+                        fileList.setSelectedRow(i);
+                        fileList.ensureRowIsVisible(i);
                         break;
                     }
                 }
@@ -250,7 +255,6 @@ public class FilePanel extends JPanel {
     }
 
     private void fillFileList(Runnable onAfterFileList) {
-        DefaultListModel fileListModel = (DefaultListModel) fileList.getModel();
         ListenableFutureTask<List<RFile>> future;
         if (fileProvider.getCurrentFolder() == null) {
             future = fileProvider.listRoots();
@@ -261,20 +265,20 @@ public class FilePanel extends JPanel {
         future.setOnError(createErrorCallback());
         future.setOnFinish((List<RFile> result) -> {
             SwingUtilities.invokeLater(() -> {
-                fileListModel.clear();
+                fileList.clear();
                 sortFileList(result);
 
                 RFile currentFolder = fileProvider.getCurrentFolder();
                 if (currentFolder != null) {
-                    fileListModel.addElement(parentRFile);
+                    fileList.addData(new RFileWrapper(parentRFile));
                 }
 
                 for (RFile file : result) {
-                    fileListModel.addElement(file);
+                    fileList.addData(new RFileWrapper(file));
                 }
-
+                fileList.fireDataChanged();
                 if (!result.isEmpty()) {
-                    fileList.setSelectedIndex(0);
+                    fileList.setSelectedRow(0);
                 }
                 if (onAfterFileList != null) {
                     onAfterFileList.run();
@@ -296,7 +300,7 @@ public class FilePanel extends JPanel {
     }
 
     private void threadedCopySelectedFiles(ActionEvent e) {
-        if (fileList.getSelectedIndices().length == 0) {
+        if (fileList.getSelectedRowCount() == 0) {
             Utils.showErrorMessage("Please select file that will be copied");
             return;
         }
@@ -305,8 +309,7 @@ public class FilePanel extends JPanel {
             return;
         }
 
-        List<RFile> selectedFiles = fileList.getSelectedValuesList();
-
+        List<RFile> selectedFiles = rfileWrapperListToRFileList(fileList.getSelectedObjects());
         LongRunningTaskWithDialog longRunningTask = new LongRunningTaskWithDialog(SwingUtilities.getWindowAncestor(this), new LongRunningTask() {
             @Override
             public Object run(LongRunningTaskWithDialog dialog) throws Exception {
@@ -360,17 +363,17 @@ public class FilePanel extends JPanel {
 
     private void renameSelectedFile(ActionEvent e) {
         try {
-            if (fileList.getSelectedIndices().length == 0) {
+            if (fileList.getSelectedRowCount() == 0) {
                 Utils.showErrorMessage("Please select file that will be renamed");
                 return;
             }
 
-            if (fileList.getSelectedIndices().length > 1) {
+            if (fileList.getSelectedRowCount() > 1) {
                 Utils.showErrorMessage("Cannot rename many files");
                 return;
             }
 
-            RFile selectedFile = fileList.getSelectedValue();
+            RFile selectedFile = fileList.getSelectedObject().getFile();
             String newName = (String) JOptionPane.showInputDialog(this, "Enter new name for file",
                     "Rename", QUESTION_MESSAGE, null, null,
                     selectedFile.getName());
@@ -407,22 +410,22 @@ public class FilePanel extends JPanel {
     }
 
     private void deleteSelectedFiles(ActionEvent e) {
-        if (fileList.getSelectedIndices().length == 0) {
+        if (fileList.getSelectedRowCount() == 0) {
             Utils.showErrorMessage("Please select file that should be removed");
             return;
         }
 
-        List<RFile> selectedFiles = fileList.getSelectedValuesList();
+        List<RFile> selectedFiles = rfileWrapperListToRFileList(fileList.getSelectedObjects());
         String message;
         String caption;
-        
+
         if (selectedFiles.size() == 1) {
             RFile selectedFile = selectedFiles.get(0);
             message = "Are you sure, you want to remove file [" + selectedFile.getName() + "]";
-            caption="Remove file";
+            caption = "Remove file";
         } else {
             message = "Are you sure, you want to remove " + selectedFiles.size() + " files";
-            caption="Remove files";
+            caption = "Remove files";
         }
 
         if (JOptionPane.YES_OPTION != JOptionPane.showOptionDialog(null, message, caption, JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null)) {
@@ -651,5 +654,13 @@ public class FilePanel extends JPanel {
         }
 
         return output;
+    }
+
+    private List<RFile> rfileWrapperListToRFileList(List<RFileWrapper> list) {
+        List<RFile> result = new ArrayList();
+        for (RFileWrapper rfw : list) {
+            result.add(rfw.getFile());
+        }
+        return result;
     }
 }

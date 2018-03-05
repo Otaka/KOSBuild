@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 public class RFile {
 
     private String parentPath;
+
     public String name;
     private long size;
     private boolean directory;
@@ -42,7 +43,7 @@ public class RFile {
         }
 
         if (parentPath.endsWith(":")) {
-            return new RFile(null, parentPath+"/", 0, true, 0, fileProvider);
+            return new RFile(null, parentPath + "/", 0, true, 0, fileProvider);
         } else if (parentPath.endsWith(":/")) {
             return new RFile(null, parentPath, 0, true, 0, fileProvider);
         } else {
@@ -78,5 +79,14 @@ public class RFile {
     @Override
     public String toString() {
         return getFullPath();
+    }
+
+    public String getExtension() {
+        int lastIndexOfDot=name.lastIndexOf('.');
+        if(lastIndexOfDot==-1){
+            return "";
+        }
+
+        return name.substring(lastIndexOfDot+1);
     }
 }

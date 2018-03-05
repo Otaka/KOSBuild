@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -181,7 +180,7 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
     }
 
     @Override
-    public ListenableFutureTask<Boolean> writeToFile(long handle, byte[] buffer,int count) {
+    public ListenableFutureTask<Boolean> writeToFile(long handle, byte[] buffer, int count) {
         ListenableFutureTaskWithData<Boolean> future = new ListenableFutureTaskWithData<>();
         OutputStream stream = filesOpenedForWritingMap.get(handle);
         if (stream == null) {
@@ -200,8 +199,8 @@ public class LocalFileSystemFileProvider extends AbstractFileProvider {
         }
 
         try {
-            for(int i=0;i<count;i++){
-                stream.write(buffer[i]&0xFF);
+            for (int i = 0; i < count; i++) {
+                stream.write(buffer[i] & 0xFF);
             }
 
             future.finishFutureAndReturnData(Boolean.TRUE);
