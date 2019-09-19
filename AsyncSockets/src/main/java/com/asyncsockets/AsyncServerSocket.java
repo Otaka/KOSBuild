@@ -22,6 +22,7 @@ public class AsyncServerSocket {
 
     public void start() throws IOException {
         serverSocket = new ServerSocket(port);
+        System.out.println("Open serverSocker "+port);
         serverAcceptThread = new Thread() {
             @Override
             public void run() {
@@ -58,11 +59,13 @@ public class AsyncServerSocket {
 
     public void stop() throws IOException {
         if (serverSocket != null) {
+            System.out.println("Close server socket");
             serverSocket.close();
         }
     }
 
     private void acceptSocket(Socket socket) throws IOException {
+        System.out.println("Accept socket from "+socket.getInetAddress());
         socketManager.acceptSocket(socket, true);
     }
     

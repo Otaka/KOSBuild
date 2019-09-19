@@ -76,8 +76,9 @@ public class ListenableFutureTask<T> extends FutureTask<T> {
     @Override
     protected void done() {
         super.done();
+        Object result = null;
         try {
-            Object result = get();
+            result = get();
             if (result == null || !(result instanceof Throwable)) {
                 if (onFinish != null) {
                     onFinish.complete((T) result);
@@ -88,11 +89,15 @@ public class ListenableFutureTask<T> extends FutureTask<T> {
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            if (onError != null) {
+                onError.complete( ex);
+            } else {
+                ex.printStackTrace();
+            }
         }
     }
-    
-    public void waitForCompletion() throws InterruptedException, ExecutionException{
+
+    public void waitForCompletion() throws InterruptedException, ExecutionException {
         get();
     }
 }
